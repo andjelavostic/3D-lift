@@ -1,8 +1,13 @@
-#ifndef ELEVATOR_H
+﻿#ifndef ELEVATOR_H
 #define ELEVATOR_H
+
 #include <vector>
 #include "PanelGrid.hpp"  // logika dugmadi
-#include "model.hpp"
+#include "Model.hpp"
+#include "Mesh.hpp"
+#include "Shader.hpp"
+#include <glm/glm.hpp>
+
 class Elevator {
 private:
     // Logika lifta
@@ -19,22 +24,34 @@ private:
     // 3D prikaz
     Model liftModel;
     Model doorModel;
-    glm::vec3 position; // x,z lokacija u prostoru
+    glm::vec3 position;    // x,z lokacija lifta
+    PanelGrid panelGrid;   // dugmići unutar lifta
 
 public:
-    Elevator(const std::string& liftPath, const std::string& doorPath, int floors = 9, int startFloor = 0, float spacing = 3.0f, glm::vec3 pos = glm::vec3(0.0f));
+    // Konstruktor: prosledjuj mesh za dugmice
+    Elevator(const std::string& liftPath,
+        const std::string& doorPath,
+        const Mesh* buttonMesh,
+        int floors = 9,
+        int startFloor = 0,
+        float spacing = 3.0f,
+        glm::vec3 pos = glm::vec3(0.0f));
 
-    // logika
+    // Logika lifta
     void callLift(int floor);
-    void updateLift(PanelGrid& panelGrid, bool personInLift);
+    void updateLift(bool personInLift);
 
-    // crtanje
+    // Crtanje
     void draw(Shader& shader);
 
-    // getteri
+    // Getteri
     int getLiftFloor() const { return liftFloor; }
     bool isDoorsOpen() const { return doorsOpen; }
     float getFloorSpacing() const { return floorSpacing; }
     bool isVentilationOn() const { return ventilationOn; }
+
+    // PanelGrid getter (ako treba spolja)
+    PanelGrid& getPanelGrid() { return panelGrid; }
 };
+
 #endif

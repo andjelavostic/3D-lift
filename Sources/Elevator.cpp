@@ -2,12 +2,25 @@
 #include <algorithm>
 #include <GLFW/glfw3.h>
 
-Elevator::Elevator(const std::string& liftPath, const std::string& doorPath, int floors, int startFloor, float spacing, glm::vec3 pos)
-    : liftModel(liftPath), doorModel(doorPath), position(pos),
-    totalFloors(floors), floorSpacing(spacing),
-    liftFloor(startFloor), liftSpeed(0.01f),
-    doorsOpen(false), doorOpenTime(0.0f), doorDuration(5.0f),
-    ventilationOn(false)
+Elevator::Elevator(const std::string& liftPath,
+    const std::string& doorPath,
+    const Mesh* buttonMesh,
+    int floors,
+    int startFloor,
+    float spacing,
+    glm::vec3 pos)
+    : liftModel(liftPath),
+    doorModel(doorPath),
+    position(pos),
+    totalFloors(floors),
+    floorSpacing(spacing),
+    liftFloor(startFloor),
+    liftSpeed(0.01f),
+    doorsOpen(false),
+    doorOpenTime(0.0f),
+    doorDuration(5.0f),
+    ventilationOn(false),
+    panelGrid(floors, buttonMesh, glm::vec3(0.5f, 0.5f, 0.0f), glm::vec3(0.2f, 0.2f, 0.05f)) // primer pozicije dugmadi unutar lifta
 {
     targetFloors.clear();
 }
@@ -17,7 +30,7 @@ void Elevator::callLift(int floor) {
         targetFloors.push_back(floor);
 }
 
-void Elevator::updateLift(PanelGrid& panelGrid, bool personInLift) {
+void Elevator::updateLift(bool personInLift) {
     float now = static_cast<float>(glfwGetTime());
     auto& buttons = panelGrid.getFloorButtons();
 
@@ -36,7 +49,7 @@ void Elevator::updateLift(PanelGrid& panelGrid, bool personInLift) {
         if (now - doorOpenTime >= doorDuration)
             doorsOpen = false;
         else
-            return;
+            return; // lift čeka dok su vrata otvorena
     }
 
     if (targetFloors.empty()) return;
@@ -57,14 +70,17 @@ void Elevator::updateLift(PanelGrid& panelGrid, bool personInLift) {
 void Elevator::draw(Shader& shader) {
     glm::mat4 model = glm::mat4(1.0f);
 
-    // pozicija lifta u prostoru i po visini sprata
+    // Pozicija lifta po visini sprata
     model = glm::translate(model, glm::vec3(position.x, liftFloor * floorSpacing, position.z));
     shader.setMat4("uM", model);
 
     liftModel.Draw(shader);
 
-    // vrata lifta (ako želiš, možeš promeniti boju/teksturu po `doorsOpen`)
-    model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
+    // Vrata lifta
+    model = glm::translate(glm::mat4(1.0f), glm::vec3(position.x, liftFloor * floorSpacing, position.z));
     shader.setMat4("uM", model);
     doorModel.Draw(shader);
+
+    // Dugmad unutar lifta
+    panelGrid.draw(shader);
 }
