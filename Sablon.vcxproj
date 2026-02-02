@@ -142,7 +142,9 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="shader.hpp" />
+    <ClCompile Include="Headers\shader.hpp" />
+    <ClCompile Include="Sources\Elevator.cpp" />
+    <ClCompile Include="Sources\PanelGrid.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".gitignore" />
@@ -151,8 +153,10 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="mesh.hpp" />
-    <ClInclude Include="model.hpp" />
+    <ClInclude Include="Headers\Elevator.hpp" />
+    <ClInclude Include="Headers\mesh.hpp" />
+    <ClInclude Include="Headers\model.hpp" />
+    <ClInclude Include="Headers\PanelGrid.hpp" />
     <ClInclude Include="texture.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

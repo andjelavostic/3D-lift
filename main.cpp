@@ -14,8 +14,8 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include "shader.hpp"
-#include "model.hpp"
+#include "Headers/shader.hpp"
+#include "Headers/model.hpp"
 
 const unsigned int wWidth = 800;
 const unsigned int wHeight = 600;
