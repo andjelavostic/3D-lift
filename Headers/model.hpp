@@ -1,6 +1,6 @@
 #ifndef MODEL_H
 #define MODEL_H
-#define STB_IMAGE_IMPLEMENTATION
+//#define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
 #include <GL/glew.h> 
@@ -24,7 +24,7 @@
 
 using namespace std;
 
-unsigned int TextureFromFile(const char* path, const string& directory, bool gamma = false);
+inline unsigned int TextureFromFile(const char* path, const string& directory, bool gamma = false);
 
 class Model
 {

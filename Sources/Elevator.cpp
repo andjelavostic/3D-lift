@@ -1,78 +1,122 @@
 ﻿#include "../Headers/Elevator.hpp"
 #include <algorithm>
 #include <GLFW/glfw3.h>
-#include <iostream>
-
+#include <glm/gtc/matrix_transform.hpp>
 Elevator::Elevator(const std::string& liftPath,
-    const std::string& doorPath,
-    float panelLeft, float panelRight,
-    float panelBottom, float panelTop,
-    int panelRows, int panelCols,
-    float buttonWidth, float buttonHeight,
-    float hSpacing, float vSpacing)
-    : liftModel(liftPath), doorModel(doorPath),
+    const std::string& doorTexPath,
+    int panelRows,
+    int panelCols)
+    : liftModel(liftPath),
+    panelGrid(panelRows, panelCols),
     position(0.0f, 0.0f, 0.0f),
-    totalFloors(panelRows), floorSpacing(3.0f),
-    liftFloor(0), liftSpeed(0.01f),
-    doorsOpen(false), doorOpenTime(0.0f), doorDuration(5.0f),
+    totalFloors(panelRows),
+    floorSpacing(3.0f),
+    liftFloor(0),
+    liftSpeed(0.01f),
+    doorsOpen(false),
+    doorOpenTime(0.0f),
+    doorDuration(5.0f),
     ventilationOn(false),
-    panelGrid(panelLeft, panelRight, panelBottom, panelTop,
-        panelRows, panelCols,
-        buttonWidth, buttonHeight,
-        hSpacing, vSpacing,
-        1.0f, 0.5f, 0.0f) // boja dugmadi, npr narandžasto
-{
-    targetFloors.clear();
-}
+    doorWidth(0.6f),
+    doorHeight(2.2f),
+    doorOffset(0.0f),
+    // ---- direktna inicijalizacija vrata ----
+    leftDoorMesh(
+        // verti + indeksi + tekstura
+        std::vector<Vertex>{
+            {{0, 0, 0}, { 0,0,1 }, { 0,0 }},
+            { {0.6f,0,0},{0,0,1},{1,0} },
+            { {0.6f,2.2f,0},{0,0,1},{1,1} },
+            { {0,2.2f,0},{0,0,1},{0,1} }
+        },
+        std::vector<unsigned int>{0, 1, 2, 0, 2, 3},
+        std::vector<Texture>{TextureFromFile(doorTexPath.c_str(), ".")}
+        ),
+        rightDoorMesh(
+            std::vector<Vertex>{
+                {{0, 0, 0}, { 0,0,1 }, { 0,0 }},
+                { {0.6f,0,0},{0,0,1},{1,0} },
+                { {0.6f,2.2f,0},{0,0,1},{1,1} },
+                { {0,2.2f,0},{0,0,1},{0,1} }
+        },
+        std::vector<unsigned int>{0, 1, 2, 0, 2, 3},
+        std::vector<Texture>{TextureFromFile(doorTexPath.c_str(), ".")}
+        )
+        {
+            // --- pozicioniraj panel u liftu ---
+            panelGrid.attachToLiftWall(
+                glm::vec3(0.95f, 1.4f, -1.0f),
+                glm::vec3(-1, 0, 0),
+                0.6f,
+                0.9f
+            );
+        }
 
-void Elevator::callLift(int floor) {
+
+void Elevator::callLift(int floor)
+{
     if (std::find(targetFloors.begin(), targetFloors.end(), floor) == targetFloors.end())
         targetFloors.push_back(floor);
 }
 
-void Elevator::updateLift(bool personInLift, float mouseX, float mouseY) {
+void Elevator::updateLift(bool personInLift,
+    glm::vec3 rayOrigin,
+    glm::vec3 rayDir)
+{
     float now = static_cast<float>(glfwGetTime());
 
-    // Check panel click ako je osoba u liftu
+    // --- klik na panel ---
     if (personInLift) {
-        panelGrid.checkClick(mouseX, mouseY, true);
-
-        for (auto& btn : panelGrid.getFloorButtons()) {
-            if (btn.pressed &&
-                std::find(targetFloors.begin(), targetFloors.end(), btn.floor) == targetFloors.end()) {
-                targetFloors.push_back(btn.floor);
-                btn.pressed = false;
-            }
-        }
+        int btn = panelGrid.checkClick(rayOrigin, rayDir, true);
+        if (btn >= 0 && std::find(targetFloors.begin(), targetFloors.end(), btn) == targetFloors.end())
+            targetFloors.push_back(btn);
     }
 
-    // Vrata otvorena?
+    // --- vrata ---
     if (doorsOpen && now - doorOpenTime >= doorDuration)
         doorsOpen = false;
 
+    // --- pomeranje lifta ---
     if (targetFloors.empty()) return;
 
     int nextFloor = targetFloors.front();
 
-    // pomeranje lifta
-    if (nextFloor > liftFloor) liftFloor++;
-    else if (nextFloor < liftFloor) liftFloor--;
+    if (nextFloor > liftFloor)
+        liftFloor++;
+    else if (nextFloor < liftFloor)
+        liftFloor--;
     else {
-        liftFloor = nextFloor;
         doorsOpen = true;
         doorOpenTime = now;
         targetFloors.erase(targetFloors.begin());
     }
+
+    // offset vrata (otvaranje/ zatvaranje)
+    float openAmount = doorsOpen ? 0.3f : 0.0f;
+    doorOffset = openAmount;
 }
 
-void Elevator::draw(Shader& shader3D, GLuint shader2D) {
-    // Lift 3D
-    glm::mat4 model = glm::translate(glm::mat4(1.0f),
+void Elevator::draw(Shader& shader3D)
+{
+    glm::mat4 liftModelMat = glm::translate(glm::mat4(1.0f),
         glm::vec3(position.x, liftFloor * floorSpacing, position.z));
-    shader3D.setMat4("uM", model);
-    liftModel.Draw(shader3D);
-    doorModel.Draw(shader3D);
 
-    // Dugmici 2D
-    panelGrid.draw(shader2D);
+    shader3D.use();
+    shader3D.setMat4("model", liftModelMat);
+
+    liftModel.Draw(shader3D);
+
+    // --- vrata ---
+    glm::mat4 leftDoorMat = glm::translate(glm::mat4(1.0f),
+        glm::vec3(position.x - doorOffset, liftFloor * floorSpacing, position.z));
+    shader3D.setMat4("model", leftDoorMat);
+    leftDoorMesh.Draw(shader3D);
+
+    glm::mat4 rightDoorMat = glm::translate(glm::mat4(1.0f),
+        glm::vec3(position.x + doorOffset, liftFloor * floorSpacing, position.z));
+    shader3D.setMat4("model", rightDoorMat);
+    rightDoorMesh.Draw(shader3D);
+
+    // --- panel ---
+    panelGrid.Draw(shader3D);
 }

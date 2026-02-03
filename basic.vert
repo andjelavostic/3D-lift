@@ -13,10 +13,9 @@ uniform mat4 uP;
 
 void main()
 {
-    chUV = inUV;
+    chUV = inUV;    
     chFragPos = vec3(uM * vec4(inPos, 1.0));
-    chNormal = mat3(transpose(inverse(uM))) * inNormal;  
-    
+    chNormal = mat3(transpose(inverse(uM))) * inNormal;
+
     gl_Position = uP * uV * vec4(chFragPos, 1.0);
 }
-
