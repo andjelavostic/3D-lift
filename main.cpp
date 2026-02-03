@@ -15,6 +15,7 @@
 
 #include "Headers/shader.hpp"
 #include "Headers/model.hpp"
+#include "Headers/Elevator.hpp"
 
 // Parametri ekrana
 unsigned int wWidth = 800; // Biće ažurirano na rezoluciju monitora
@@ -60,24 +61,62 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
     front.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
     cameraFront = glm::normalize(front);
 }
+bool isPointOnFloor(glm::vec3 p) {
+    // 1. Levi vertikalni krak (od X -11 do 0.5, Z 1 do 11)
+    bool part1 = (p.x >= -11.5f && p.x <= 0.5f && p.z >= 1.0f && p.z <= 11.5f);
 
-void processInput(GLFWwindow* window) {
+    // 2. Gornji horizontalni krak (od X 0.5 do 11.5, Z -10.5 do 11.5)
+    // Napomena: Z -10.5 je onaj donji deo koji si izmerila (11.031, -10.25)
+    bool part2 = (p.x > 0.5f && p.x <= 11.5f && p.z >= -10.5f && p.z <= 11.5f);
+
+    return part1 || part2;
+}
+void processInput(GLFWwindow* window, Elevator& lift) {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
 
     float cameraSpeed = 5.5f * deltaTime;
-    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-        cameraPos += cameraSpeed * cameraFront;
-    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-        cameraPos -= cameraSpeed * cameraFront;
-    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-        cameraPos -= glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
-    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-        cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
 
-    cameraPos.y = 3.0f; // Lock na visinu poda
+    // Smerovi kretanja (ravno, bez propadanja)
+    glm::vec3 forward = glm::normalize(glm::vec3(cameraFront.x, 0.0f, cameraFront.z));
+    glm::vec3 right = glm::normalize(glm::cross(forward, cameraUp));
+
+    glm::vec3 nextPos = cameraPos;
+
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) nextPos += forward * cameraSpeed;
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) nextPos -= forward * cameraSpeed;
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) nextPos -= right * cameraSpeed;
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) nextPos += right * cameraSpeed;
+
+    // --- STRIKTNA KOLIZIJA ---
+    bool wasIn = lift.isInside(cameraPos);
+    bool willBeIn = lift.isInside(nextPos);
+    bool onFloor = isPointOnFloor(nextPos);
+
+    if (wasIn != willBeIn) {
+        // POKUŠAJ PROLASKA KROZ ZID ILI VRATA
+        if (lift.isAtDoor(nextPos) && lift.doorsOpen) {
+            cameraPos = nextPos; // Dozvoli ulaz/izlaz kroz otvorena vrata
+        }
+        else {
+            // BLOKADA: Ovde udaraš u zidove (sa strane, otpozadi, ili zatvorena vrata)
+        }
+    }
+    else {
+        // KRETANJE UNUTAR ISTOG PROSTORA
+        if (willBeIn || onFloor) {
+            cameraPos = nextPos;
+        }
+    }
+
+    // --- VISINA ---
+    if (lift.isInside(cameraPos)) {
+        cameraPos.y = lift.currentY + 3.0f;
+    }
+    else {
+        cameraPos.y = 3.0f; // Tvoj lift je na 5.3f, pa pretpostavljam da je i sprat tu
+    }
 }
-
 int main() {
     if (!glfwInit()) return -1;
 
@@ -110,7 +149,7 @@ int main() {
     Model lija("res/scene.obj");
     Shader unifiedShader("basic.vert", "basic.frag");
 
-    Model liftModel("res/elevator.obj"); 
+    Elevator mojLift("res/elevator.obj", glm::vec3(5.5f, 5.3f, -7.5f));
 
     // Logika lifta
     float liftY = 0.0f;          // Trenutna visina lifta
@@ -128,6 +167,9 @@ int main() {
     const double frameTimeLimit = 1.0 / targetFPS;
 
     while (!glfwWindowShouldClose(window)) {
+        if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
+            std::cout << "Trenutna pozicija: X: " << cameraPos.x << " Z: " << cameraPos.z << std::endl;
+        }
         double frameStartTime = glfwGetTime();
         
         // 1. Vreme i DeltaTime
@@ -136,7 +178,7 @@ int main() {
         lastFrame = currentFrame;
 
         // 2. Input
-        processInput(window);
+        processInput(window,mojLift);
 
         // 3. Render
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
@@ -154,18 +196,12 @@ int main() {
 
         lija.Draw(unifiedShader);
 
-        // 2. Matrica za lift
-        glm::mat4 liftM = glm::mat4(1.0f);
-
-        // POZICIJA: Pomeraj treći broj (Z) dok ne upadne u zid. 
-        // Ako je zid "ispred" tebe kad kreneš, smanjuj Z (npr. -15, -20...)
-        // Ako je "iza", povećavaj Z.
-        liftM = glm::translate(liftM, glm::vec3(5.5f,5.5f, -7.5f));
-        
-        // SKALA: Pošto je 0.07 premalo, probaj npr. 2.5 ili više dok ne popuni rupu u zidu
-        liftM = glm::scale(liftM, glm::vec3(0.025f, 0.025f, 0.025f));
-        unifiedShader.setMat4("uM", liftM);
-        liftModel.Draw(unifiedShader);
+        mojLift.update(deltaTime);
+        mojLift.draw(unifiedShader);
+        if (mojLift.isInside(cameraPos)) {
+            cameraPos.y = mojLift.currentY + 1.75f; // Kamera prati lift
+            // Ograniči kretanje unutar mojLift.minX, maxX itd.
+        }
 
         glfwSwapBuffers(window);
         glfwPollEvents();

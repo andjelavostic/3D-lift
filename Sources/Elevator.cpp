@@ -1,122 +1,113 @@
 ﻿#include "../Headers/Elevator.hpp"
-#include <algorithm>
-#include <GLFW/glfw3.h>
-#include <glm/gtc/matrix_transform.hpp>
-Elevator::Elevator(const std::string& liftPath,
-    const std::string& doorTexPath,
-    int panelRows,
-    int panelCols)
-    : liftModel(liftPath),
-    panelGrid(panelRows, panelCols),
-    position(0.0f, 0.0f, 0.0f),
-    totalFloors(panelRows),
-    floorSpacing(3.0f),
-    liftFloor(0),
-    liftSpeed(0.01f),
-    doorsOpen(false),
-    doorOpenTime(0.0f),
-    doorDuration(5.0f),
-    ventilationOn(false),
-    doorWidth(0.6f),
-    doorHeight(2.2f),
-    doorOffset(0.0f),
-    // ---- direktna inicijalizacija vrata ----
-    leftDoorMesh(
-        // verti + indeksi + tekstura
-        std::vector<Vertex>{
-            {{0, 0, 0}, { 0,0,1 }, { 0,0 }},
-            { {0.6f,0,0},{0,0,1},{1,0} },
-            { {0.6f,2.2f,0},{0,0,1},{1,1} },
-            { {0,2.2f,0},{0,0,1},{0,1} }
-        },
-        std::vector<unsigned int>{0, 1, 2, 0, 2, 3},
-        std::vector<Texture>{TextureFromFile(doorTexPath.c_str(), ".")}
-        ),
-        rightDoorMesh(
-            std::vector<Vertex>{
-                {{0, 0, 0}, { 0,0,1 }, { 0,0 }},
-                { {0.6f,0,0},{0,0,1},{1,0} },
-                { {0.6f,2.2f,0},{0,0,1},{1,1} },
-                { {0,2.2f,0},{0,0,1},{0,1} }
-        },
-        std::vector<unsigned int>{0, 1, 2, 0, 2, 3},
-        std::vector<Texture>{TextureFromFile(doorTexPath.c_str(), ".")}
-        )
-        {
-            // --- pozicioniraj panel u liftu ---
-            panelGrid.attachToLiftWall(
-                glm::vec3(0.95f, 1.4f, -1.0f),
-                glm::vec3(-1, 0, 0),
-                0.6f,
-                0.9f
-            );
+
+Elevator::Elevator(const char* modelPath, glm::vec3 startPos) {
+    model = new Model(modelPath);
+    position = startPos;
+    currentY = startPos.y;
+    targetY = startPos.y;
+    speed = 2.0f;
+    doorsOpen = false;
+    doorOpenTime = 0.0f;
+    doorDuration = 5.0f;
+    doorExtended = false;
+    // Postavi granice na osnovu pozicije (npr. kabina je 2x2 metra)
+    // Elevator.cpp konstruktor
+    /*minX = position.x - (1.5f * 2.5f); // Pola širine modela * skala
+    maxX = position.x + (1.5f * 2.5f);
+    minZ = position.z - (1.5f * 2.5f);
+    maxZ = position.z + (1.5f * 2.5f);*/
+    // Na osnovu merenja, kabina je otprilike ovde:
+    minX = 3.06f;
+    maxX = 8.82f;
+    minZ = -10.43f;
+    maxZ = -7.02f; // Zadnji zid je na -9, vrata su na -6.5
+}
+void Elevator::update(float deltaTime) {
+    float now = (float)glfwGetTime();
+
+    // Logika tajmera (tvojih 5 sekundi)
+    if (doorsOpen) {
+        if (now - doorOpenTime >= doorDuration) {
+            doorsOpen = false;
         }
-
-
-void Elevator::callLift(int floor)
-{
-    if (std::find(targetFloors.begin(), targetFloors.end(), floor) == targetFloors.end())
-        targetFloors.push_back(floor);
-}
-
-void Elevator::updateLift(bool personInLift,
-    glm::vec3 rayOrigin,
-    glm::vec3 rayDir)
-{
-    float now = static_cast<float>(glfwGetTime());
-
-    // --- klik na panel ---
-    if (personInLift) {
-        int btn = panelGrid.checkClick(rayOrigin, rayDir, true);
-        if (btn >= 0 && std::find(targetFloors.begin(), targetFloors.end(), btn) == targetFloors.end())
-            targetFloors.push_back(btn);
+        // Glatko otvaranje
+        if (doorOpenFactor < 1.0f) doorOpenFactor += deltaTime * 2.0f;
     }
-
-    // --- vrata ---
-    if (doorsOpen && now - doorOpenTime >= doorDuration)
-        doorsOpen = false;
-
-    // --- pomeranje lifta ---
-    if (targetFloors.empty()) return;
-
-    int nextFloor = targetFloors.front();
-
-    if (nextFloor > liftFloor)
-        liftFloor++;
-    else if (nextFloor < liftFloor)
-        liftFloor--;
     else {
-        doorsOpen = true;
-        doorOpenTime = now;
-        targetFloors.erase(targetFloors.begin());
+        // Glatko zatvaranje
+        if (doorOpenFactor > 0.0f) doorOpenFactor -= deltaTime * 2.0f;
     }
 
-    // offset vrata (otvaranje/ zatvaranje)
-    float openAmount = doorsOpen ? 0.3f : 0.0f;
-    doorOffset = openAmount;
+    // Ograniči faktor između 0 i 1
+    doorOpenFactor = glm::clamp(doorOpenFactor, 0.0f, 1.0f);
+
+
+    // Pomeranje ka cilju (ako postoji sprat u listi)
+    if (!targetFloors.empty()) {
+        int nextFloor = targetFloors.front();
+        float targetY = nextFloor * 10.0f; // Pretpostavka: sprat je visok 10 jedinica
+
+        if (abs(currentY - targetY) > 0.05f) {
+            if (currentY < targetY) currentY += speed * deltaTime;
+            else currentY -= speed * deltaTime;
+        }
+        else {
+            // Stigli smo na sprat
+            currentY = targetY;
+            liftFloor = nextFloor;
+            openDoors(); // Otvori vrata na 5 sekundi
+            targetFloors.erase(targetFloors.begin()); // Izbaci taj sprat iz liste
+        }
+    }
 }
 
-void Elevator::draw(Shader& shader3D)
-{
-    glm::mat4 liftModelMat = glm::translate(glm::mat4(1.0f),
-        glm::vec3(position.x, liftFloor * floorSpacing, position.z));
+void Elevator::openDoors() {
+    doorsOpen = true;
+    doorOpenTime = (float)glfwGetTime();
+    doorDuration = 5.0f;
+    doorExtended = false; // Resetuj mogućnost produžavanja
+}
 
-    shader3D.use();
-    shader3D.setMat4("model", liftModelMat);
+void Elevator::extendDoors() {
+    if (doorsOpen && !doorExtended) {
+        doorDuration += 5.0f; // Produži za još 5 sekundi
+        doorExtended = true;  // Može samo jednom
+        std::cout << "Vrata produžena!" << std::endl;
+    }
+}
 
-    liftModel.Draw(shader3D);
+void Elevator::closeDoorsImmediately() {
+    if (doorsOpen) {
+        // Postavljamo vreme tako da tajmer odmah istekne
+        doorOpenTime = (float)glfwGetTime() - doorDuration;
+    }
+}
 
-    // --- vrata ---
-    glm::mat4 leftDoorMat = glm::translate(glm::mat4(1.0f),
-        glm::vec3(position.x - doorOffset, liftFloor * floorSpacing, position.z));
-    shader3D.setMat4("model", leftDoorMat);
-    leftDoorMesh.Draw(shader3D);
+void Elevator::draw(Shader& shader) {
+    glm::mat4 modelMat = glm::mat4(1.0f);
+    modelMat = glm::translate(modelMat, glm::vec3(position.x, currentY, position.z));
+    modelMat = glm::scale(modelMat, glm::vec3(0.025f)); // Tvoja skala
+    shader.setMat4("uM", modelMat);
+    model->Draw(shader);
+}
+bool Elevator::isInside(glm::vec3 p) {
+    // Provera da li je igrač unutar te kutije
+    return (p.x >= minX && p.x <= maxX && p.z >= minZ && p.z <= maxZ);
+}
 
-    glm::mat4 rightDoorMat = glm::translate(glm::mat4(1.0f),
-        glm::vec3(position.x + doorOffset, liftFloor * floorSpacing, position.z));
-    shader3D.setMat4("model", rightDoorMat);
-    rightDoorMesh.Draw(shader3D);
+bool Elevator::isAtDoor(glm::vec3 p) {
+    // Vrata su na prednjoj ivici (maxZ), u onom opsegu koji si izmerila (4.3 - 5.9)
+    bool atX = (p.x >= 4.3f && p.x <= 5.9f);
+    bool atZ = (p.z >= -7.3f && p.z <= -6.8f); // Prag vrata oko prednje ivice
+    return atX && atZ;
+}
 
-    // --- panel ---
-    panelGrid.Draw(shader3D);
+void Elevator::goToFloor(float yHeight) {
+    if (!doorsOpen) targetY = yHeight; // Ne kreći se ako su vrata otvorena
+}
+
+void Elevator::toggleDoors() {
+    if (abs(targetY - currentY) < 0.05f) { // Otvaraj samo kad lift stoji
+        doorsOpen = !doorsOpen;
+    }
 }

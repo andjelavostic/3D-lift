@@ -1,66 +1,40 @@
-﻿#ifndef ELEVATOR_H
-#define ELEVATOR_H
-
-#include <vector>
-#include <string>
-
+﻿#ifndef ELEVATOR_HPP
+#define ELEVATOR_HPP
+#include <GL/glew.h>
+#include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
-
-#include "PanelGrid.hpp"
-#include "Model.hpp"
-#include "Shader.hpp"
-#include "Mesh.hpp"
+#include <glm/gtc/matrix_transform.hpp>
+#include "shader.hpp"
+#include "model.hpp"
 
 class Elevator {
-private:
-    // --- logika lifta ---
-    int totalFloors;
-    float floorSpacing;
-    int liftFloor;
-    float liftSpeed;
-
+public:
+    glm::vec3 position;
+    float currentY;
+    float targetY;
+    float speed;
     bool doorsOpen;
+    Model* model;
     float doorOpenTime;
     float doorDuration;
-
+    bool doorExtended;
+    int liftFloor;
     std::vector<int> targetFloors;
-    bool ventilationOn;
+    Model* doorModel;      // Model jednog krila vrata
+    float doorOpenFactor;
+    // Granice za koliziju (unutrašnjost kabine)
+    float minX, maxX, minZ, maxZ;
 
-    // --- 3D prikaz ---
-    Model liftModel;
-    glm::vec3 position;
-
-    // --- vrata kao Mesh kvadrati ---
-    Mesh leftDoorMesh;
-    Mesh rightDoorMesh;
-    float doorWidth;
-    float doorHeight;
-    float doorOffset; // koliko se pomeraju kada su otvorena
-    Texture doorTexture;
-
-    // --- panel dugmadi ---
-    PanelGrid panelGrid;
-
-public:
-    Elevator(const std::string& liftPath,
-        const std::string& doorTexPath,
-        int panelRows,
-        int panelCols);
-
-    void callLift(int floor);
-
-    // ray dolazi iz kamere
-    void updateLift(bool personInLift,
-        glm::vec3 rayOrigin,
-        glm::vec3 rayDir);
-
-    void draw(Shader& shader3D);
-
-    // getteri
-    int getLiftFloor() const { return liftFloor; }
-    bool isDoorsOpen() const { return doorsOpen; }
-
-    PanelGrid& getPanelGrid() { return panelGrid; }
+    Elevator(const char* modelPath, glm::vec3 startPos);
+    void draw(Shader& shader);
+    bool isInside(glm::vec3 personPos);
+    bool isAtDoor(glm::vec3 p);
+    void goToFloor(float yHeight);
+    void toggleDoors();
+    void update(float deltaTime);
+    void openDoors();
+    void extendDoors(); // Dugme za produžavanje
+    void closeDoorsImmediately();
 };
 
 #endif
