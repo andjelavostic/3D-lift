@@ -147,6 +147,7 @@
     <ClCompile Include="Sources\Floor.cpp" />
     <ClCompile Include="Sources\PanelGrid.cpp" />
     <ClCompile Include="Sources\Person.cpp" />
+    <ClCompile Include="Sources\Util.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".gitignore" />
@@ -161,6 +162,7 @@
     <ClInclude Include="Headers\model.hpp" />
     <ClInclude Include="Headers\PanelGrid.hpp" />
     <ClInclude Include="Headers\Person.hpp" />
+    <ClInclude Include="Headers\Util.hpp" />
     <ClInclude Include="texture.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

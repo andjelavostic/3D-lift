@@ -2,9 +2,9 @@
 #define ELEVATOR_H
 
 #include <vector>
-#include "PanelGrid.hpp"  // logika dugmadi
+#include <string>
+#include "PanelGrid.hpp"
 #include "Model.hpp"
-#include "Mesh.hpp"
 #include "Shader.hpp"
 #include <glm/glm.hpp>
 
@@ -24,25 +24,24 @@ private:
     // 3D prikaz
     Model liftModel;
     Model doorModel;
-    glm::vec3 position;    // x,z lokacija lifta
-    PanelGrid panelGrid;   // dugmići unutar lifta
+    glm::vec3 position;    // x,z pozicija lifta
+    PanelGrid panelGrid;   // 2D dugmici unutar lifta
 
 public:
-    // Konstruktor: prosledjuj mesh za dugmice
     Elevator(const std::string& liftPath,
         const std::string& doorPath,
-        const Mesh* buttonMesh,
-        int floors = 9,
-        int startFloor = 0,
-        float spacing = 3.0f,
-        glm::vec3 pos = glm::vec3(0.0f));
+        float panelLeft, float panelRight,
+        float panelBottom, float panelTop,
+        int panelRows, int panelCols,
+        float buttonWidth, float buttonHeight,
+        float hSpacing, float vSpacing);
 
     // Logika lifta
     void callLift(int floor);
-    void updateLift(bool personInLift);
+    void updateLift(bool personInLift, float mouseX, float mouseY);
 
     // Crtanje
-    void draw(Shader& shader);
+    void draw(Shader& shader3D, GLuint shader2D);
 
     // Getteri
     int getLiftFloor() const { return liftFloor; }
@@ -50,7 +49,6 @@ public:
     float getFloorSpacing() const { return floorSpacing; }
     bool isVentilationOn() const { return ventilationOn; }
 
-    // PanelGrid getter (ako treba spolja)
     PanelGrid& getPanelGrid() { return panelGrid; }
 };
 

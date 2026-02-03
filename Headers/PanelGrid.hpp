@@ -3,39 +3,61 @@
 
 #include <vector>
 #include <glm/glm.hpp>
-#include "mesh.hpp"
-#include "shader.hpp"
-
-// Struktura za stanje dugmeta
-struct ButtonState {
-    int floor;               // koji sprat dugme predstavlja
-    bool pressed;            // da li je dugme pritisnuto
-    bool highlight;          // da li je uokvireno / highlight
-    glm::vec3 position;      // pozicija dugmeta u 3D prostoru
-    glm::vec3 scale;         // veličina dugmeta
-};
-
 class PanelGrid {
 private:
+    int rows, cols;
+    float color[3];
+
+    // Struktura za grafiku dugmeta (VAO, VBO, tekstura)
+    struct ButtonGraphic {
+        GLuint VAO;
+        GLuint VBO;
+        GLuint texture;
+        float x0, y0, x1, y1; // koordinatni opseg za detekciju klika
+    };
+    std::vector<ButtonGraphic> buttons;
+
+    // Struktura za stanje dugmeta (sprat, pressed, highlight)
+    struct ButtonState {
+        int floor;         // broj sprata
+        bool pressed;      // da li je taster trenutno pritisnut
+        bool highlight;    // da li da se crta uokviren
+    };
     std::vector<ButtonState> floorButtons;
-    Mesh* buttonMesh;  // Mesh dugmeta, svi dugmići koriste isti mesh
+
+    // Putanje do tekstura dugmadi
+    std::vector<std::string> texturePaths = {
+        "resources/su.png",
+        "resources/pr.png",
+        "resources/number-one.png",
+        "resources/number-2.png",
+        "resources/number-3.png",
+        "resources/number-four.png",
+        "resources/number-five.png",
+        "resources/number-six.png",
+        "resources/close.png",
+        "resources/open.png",
+        "resources/stop.png",
+        "resources/fan.png"
+    };
 
 public:
-    PanelGrid(int numFloors, Mesh* mesh, const glm::vec3& startPos, const glm::vec3& spacing);
+    // Konstruktor
+    PanelGrid(float left, float right, float bottom, float top,
+        int r, int c, float buttonWidth, float buttonHeight,
+        float hSpacing, float vSpacing,
+        float red = 0.6f, float green = 0.6f, float blue = 0.6f);
 
-    // pritisak dugmeta (logika)
-    void pressButton(int floor);
+    // Crtanje svih dugmica
+    void draw(GLuint shader);
 
-    // provera da li igrač klikće dugme (ray u world prostoru)
-    void checkClick(const glm::vec3& rayOrigin, const glm::vec3& rayDir, bool inLift);
+    // Provera klika miša
+    void checkClick(float mouseX, float mouseY, bool inLift);
 
-    // crta sve dugmiće
-    void draw(Shader& shader);
-
-    // dobij sve dugmiće
-    std::vector<ButtonState>& getFloorButtons() { return floorButtons; }
-
-    ~PanelGrid() {}
+    std::vector<ButtonState>& getFloorButtons() {
+        return floorButtons;
+    }
+    // Destruktor
+    ~PanelGrid();
 };
-
 #endif

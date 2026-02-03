@@ -1,0 +1,76 @@
+# MTL file - created by a modified js OBJExporter
+
+newmtl Floor
+Tr 0.0000
+Tf 1.0000 1.0000 1.0000
+illum 1
+Pr 0.5226682595604101
+Pds 1
+Pl 1
+Ka 1 1 1
+Kd 1 1 1
+Ke 0 0 0
+map_Kd Floor.png
+
+newmtl Glass
+Tr 0.0000
+Tf 1.0000 1.0000 1.0000
+illum 1
+Pm 0.28495324938133143
+Pr 1
+Pds 1
+Pl 1
+Ka 1 1 1
+Kd 1 1 1
+Ke 1 1 1
+map_Kd Glass.png
+map_Ke Glass.png
+map_Pm metalnessMap2.png
+map_Pr metalnessMap2.png
+norm normalMap2.png
+
+newmtl Ceiling
+Tr 0.0000
+Tf 1.0000 1.0000 1.0000
+illum 1
+Pm 0.1569528592849045
+Pr 0.8274310931233314
+Pds 1
+Pl 1
+Ka 1 1 1
+Kd 1 1 1
+Ke 0 0 0
+map_Kd Ceiling.png
+map_Pm metalnessMap3.png
+map_Pr metalnessMap3.png
+norm normalMap3.png
+
+newmtl Baseboard
+Tr 0.0000
+Tf 1.0000 1.0000 1.0000
+illum 1
+Pr 1
+Pds 1
+Pl 1
+Ka 1 1 1
+Kd 1 1 1
+Ke 0 0 0
+map_Kd Baseboard.png
+map_Pm metalnessMap4.png
+map_Pr metalnessMap4.png
+norm normalMap4.png
+
+newmtl Wall01
+Tr 0.0000
+Tf 1.0000 1.0000 1.0000
+illum 1
+Pr 0.9249551998634662
+Pds 1
+Pl 1
+Ka 1 1 1
+Kd 1 1 1
+Ke 0 0 0
+map_Kd Wall01.png
+map_Pm metalnessMap5.png
+map_Pr metalnessMap5.png
+norm normalMap5.png

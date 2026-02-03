@@ -1,26 +1,26 @@
 ﻿#include "../Headers/Elevator.hpp"
 #include <algorithm>
 #include <GLFW/glfw3.h>
+#include <iostream>
 
 Elevator::Elevator(const std::string& liftPath,
     const std::string& doorPath,
-    const Mesh* buttonMesh,
-    int floors,
-    int startFloor,
-    float spacing,
-    glm::vec3 pos)
-    : liftModel(liftPath),
-    doorModel(doorPath),
-    position(pos),
-    totalFloors(floors),
-    floorSpacing(spacing),
-    liftFloor(startFloor),
-    liftSpeed(0.01f),
-    doorsOpen(false),
-    doorOpenTime(0.0f),
-    doorDuration(5.0f),
+    float panelLeft, float panelRight,
+    float panelBottom, float panelTop,
+    int panelRows, int panelCols,
+    float buttonWidth, float buttonHeight,
+    float hSpacing, float vSpacing)
+    : liftModel(liftPath), doorModel(doorPath),
+    position(0.0f, 0.0f, 0.0f),
+    totalFloors(panelRows), floorSpacing(3.0f),
+    liftFloor(0), liftSpeed(0.01f),
+    doorsOpen(false), doorOpenTime(0.0f), doorDuration(5.0f),
     ventilationOn(false),
-    panelGrid(floors, buttonMesh, glm::vec3(0.5f, 0.5f, 0.0f), glm::vec3(0.2f, 0.2f, 0.05f)) // primer pozicije dugmadi unutar lifta
+    panelGrid(panelLeft, panelRight, panelBottom, panelTop,
+        panelRows, panelCols,
+        buttonWidth, buttonHeight,
+        hSpacing, vSpacing,
+        1.0f, 0.5f, 0.0f) // boja dugmadi, npr narandžasto
 {
     targetFloors.clear();
 }
@@ -30,33 +30,31 @@ void Elevator::callLift(int floor) {
         targetFloors.push_back(floor);
 }
 
-void Elevator::updateLift(bool personInLift) {
+void Elevator::updateLift(bool personInLift, float mouseX, float mouseY) {
     float now = static_cast<float>(glfwGetTime());
-    auto& buttons = panelGrid.getFloorButtons();
 
-    // dodavanje spratova po klikovima dugmadi
+    // Check panel click ako je osoba u liftu
     if (personInLift) {
-        for (auto& btn : buttons) {
-            if (btn.pressed && std::find(targetFloors.begin(), targetFloors.end(), btn.floor) == targetFloors.end()) {
+        panelGrid.checkClick(mouseX, mouseY, true);
+
+        for (auto& btn : panelGrid.getFloorButtons()) {
+            if (btn.pressed &&
+                std::find(targetFloors.begin(), targetFloors.end(), btn.floor) == targetFloors.end()) {
                 targetFloors.push_back(btn.floor);
                 btn.pressed = false;
             }
         }
     }
 
-    // vrata otvorena?
-    if (doorsOpen) {
-        if (now - doorOpenTime >= doorDuration)
-            doorsOpen = false;
-        else
-            return; // lift čeka dok su vrata otvorena
-    }
+    // Vrata otvorena?
+    if (doorsOpen && now - doorOpenTime >= doorDuration)
+        doorsOpen = false;
 
     if (targetFloors.empty()) return;
 
     int nextFloor = targetFloors.front();
 
-    // pomeranje lifta ka sledećem spratu
+    // pomeranje lifta
     if (nextFloor > liftFloor) liftFloor++;
     else if (nextFloor < liftFloor) liftFloor--;
     else {
@@ -67,20 +65,14 @@ void Elevator::updateLift(bool personInLift) {
     }
 }
 
-void Elevator::draw(Shader& shader) {
-    glm::mat4 model = glm::mat4(1.0f);
+void Elevator::draw(Shader& shader3D, GLuint shader2D) {
+    // Lift 3D
+    glm::mat4 model = glm::translate(glm::mat4(1.0f),
+        glm::vec3(position.x, liftFloor * floorSpacing, position.z));
+    shader3D.setMat4("uM", model);
+    liftModel.Draw(shader3D);
+    doorModel.Draw(shader3D);
 
-    // Pozicija lifta po visini sprata
-    model = glm::translate(model, glm::vec3(position.x, liftFloor * floorSpacing, position.z));
-    shader.setMat4("uM", model);
-
-    liftModel.Draw(shader);
-
-    // Vrata lifta
-    model = glm::translate(glm::mat4(1.0f), glm::vec3(position.x, liftFloor * floorSpacing, position.z));
-    shader.setMat4("uM", model);
-    doorModel.Draw(shader);
-
-    // Dugmad unutar lifta
-    panelGrid.draw(shader);
+    // Dugmici 2D
+    panelGrid.draw(shader2D);
 }

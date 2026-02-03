@@ -1,5 +1,5 @@
-﻿#ifndef FLOOR_H
-#define FLOOR_H
+﻿#ifndef PERSON_H
+#define PERSON_H
 #include <glm/glm.hpp>
 #include "mesh.hpp"
 #include "shader.hpp"
