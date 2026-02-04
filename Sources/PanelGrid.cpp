@@ -1,26 +1,22 @@
 ﻿#include "../Headers/PanelGrid.hpp"
 #include "../Headers/model.hpp"
+#include <glm/gtc/matrix_transform.hpp>
 #include <cmath>
 
 PanelGrid::PanelGrid(int r, int c)
     : rows(r), cols(c),
     panelMesh(
-        // vertices
-        std::vector<Vertex>{
-            {{0, 0, 0}, { 0, 0, 1 }, { 0, 0 }},
-            { {1, 0, 0}, {0, 0, 1}, {1, 0} },
-            { {1, 1, 0}, {0, 0, 1}, {1, 1} },
-            { {0, 1, 0}, {0, 0, 1}, {0, 1} }
-},
-// indices
-std::vector<unsigned int>{0, 1, 2, 0, 2, 3},
-// empty textures
-std::vector<Texture>{}
-)
+        {
+            {{0, 0, 0}, {0, 0, 1}, {0, 0}},
+            {{1, 0, 0}, {0, 0, 1}, {1, 0}},
+            {{1, 1, 0}, {0, 0, 1}, {1, 1}},
+            {{0, 1, 0}, {0, 0, 1}, {0, 1}}
+        },
+        { 0, 1, 2, 0, 2, 3 },
+        {}
+    )
 {
-
-    // ---------- textures ----------
-    vector<string> paths = {
+    std::vector<std::string> paths = {
         "res/su.png", "res/pr.png",
         "res/number-one.png", "res/number-2.png",
         "res/number-3.png", "res/number-four.png",
@@ -32,12 +28,14 @@ std::vector<Texture>{}
     for (auto& p : paths) {
         Texture t;
         t.id = TextureFromFile(p.c_str(), ".");
-        t.type = "uDiffMap";
+        t.type = "uDiffMap1";   // ⬅️ MORA DA SE POKLAPA SA FRAG SHADEROM
         t.path = p;
         buttonTextures.push_back(t);
     }
 }
-void PanelGrid::attachToLiftWall(glm::vec3 pos,
+
+void PanelGrid::attachToLiftWall(
+    glm::vec3 pos,
     glm::vec3 wallNormal,
     float width,
     float height)
@@ -53,23 +51,40 @@ void PanelGrid::attachToLiftWall(glm::vec3 pos,
             glm::vec3(0, 1, 0));
     }
 
-    model = glm::scale(model,
-        glm::vec3(width, height, 1.0f));
+    model = glm::scale(model, glm::vec3(width, height, 1.0f));
 }
 void PanelGrid::Draw(Shader& shader)
 {
     shader.use();
-    shader.setMat4("model", model);
+    shader.setInt("uDiffMap1", 0);
+
+    float cellW = 1.0f / cols;
+    float cellH = 1.0f / rows;
+    float buttonScale = 0.75f;
 
     int i = 0;
     for (int r = 0; r < rows; r++) {
         for (int c = 0; c < cols; c++) {
-            shader.setVec4("uvRect",
-                float(c) / cols,
-                float(rows - r - 1) / rows,
-                float(c + 1) / cols,
-                float(rows - r) / rows
-            );
+
+            glm::mat4 m = model;
+
+            // pozicija ćelije
+            float invR = (rows - 1 - r);
+
+            m = glm::translate(m,
+                glm::vec3(c * cellW, invR * cellH, 0.001f));
+
+
+            // centriranje
+            float offX = (cellW * (1.0f - buttonScale)) * 0.5f;
+            float offY = (cellH * (1.0f - buttonScale)) * 0.5f;
+            m = glm::translate(m, glm::vec3(offX, offY, 0));
+
+            // skaliranje dugmeta
+            m = glm::scale(m,
+                glm::vec3(cellW * buttonScale, cellH * buttonScale, 1.0f));
+
+            shader.setMat4("uM", m);
 
             glActiveTexture(GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, buttonTextures[i++].id);
@@ -78,30 +93,5 @@ void PanelGrid::Draw(Shader& shader)
         }
     }
 }
-int PanelGrid::checkClick(glm::vec3 rayOrigin,
-    glm::vec3 rayDir,
-    bool inLift)
-{
-    if (!inLift) return -1;
 
-    float denom = glm::dot(normal, rayDir);
-    if (fabs(denom) < 0.0001f) return -1;
-
-    glm::vec3 pos = glm::vec3(model[3]);
-    float t = glm::dot(pos - rayOrigin, normal) / denom;
-    if (t < 0) return -1;
-
-    glm::vec3 hit = rayOrigin + rayDir * t;
-    glm::vec3 local =
-        glm::inverse(model) * glm::vec4(hit, 1.0f);
-
-    if (local.x < 0 || local.x > 1 ||
-        local.y < 0 || local.y > 1)
-        return -1;
-
-    int col = int(local.x * cols);
-    int row = int((1.0f - local.y) * rows);
-
-    return row * cols + col;
-}
 

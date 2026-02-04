@@ -16,6 +16,7 @@
 #include "Headers/shader.hpp"
 #include "Headers/model.hpp"
 #include "Headers/Elevator.hpp"
+#include "Headers/PanelGrid.hpp"
 
 // Parametri ekrana
 unsigned int wWidth = 800; // Biće ažurirano na rezoluciju monitora
@@ -184,6 +185,20 @@ int main() {
     Shader unifiedShader("basic.vert", "basic.frag");
 
     Elevator mojLift("res/elevator.obj", glm::vec3(5.5f, 5.3f, -7.5f));
+    PanelGrid panel(6,2); // 4 reda, 3 kolone
+    panel.attachToLiftWall(
+        glm::vec3(
+            mojLift.maxX - 5.0f,                 // malo ispred zida
+            mojLift.position.y-3.0f ,            // visina panela
+            (mojLift.minZ + mojLift.maxZ) * 0.6f  // sredina zida
+        ),
+        glm::vec3(-1, 0, 0), // normal zida (ka unutra)
+        0.6f,               // širina panela
+        1.2f                // visina panela
+    );
+
+
+
 
     // Logika lifta
     float liftY = 0.0f;          // Trenutna visina lifta
@@ -232,6 +247,7 @@ int main() {
 
         mojLift.update(deltaTime);
         mojLift.draw(unifiedShader);
+        panel.Draw(unifiedShader);
 
         glfwSwapBuffers(window);
         glfwPollEvents();
