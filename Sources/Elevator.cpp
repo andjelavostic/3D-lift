@@ -111,6 +111,8 @@ void Elevator::draw(Shader& shader) {
     shader.setMat4("uM", cabinMat);
     model->Draw(shader);
 
+
+
     // 2. NACRTAJ BARIJERU (Koristimo isti model, ali spljeskan)
     if (doorOpenFactor < 0.98f) {
         // Počinjemo od ISTE pozicije gde je i lift

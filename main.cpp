@@ -185,19 +185,39 @@ int main() {
     Shader unifiedShader("basic.vert", "basic.frag");
 
     Elevator mojLift("res/elevator.obj", glm::vec3(5.5f, 5.3f, -7.5f));
+    Shader panelShader("panel.vert", "panel.frag");
+
     PanelGrid panel(6,2); // 4 reda, 3 kolone
     panel.attachToLiftWall(
         glm::vec3(
             mojLift.maxX - 5.0f,                 // malo ispred zida
-            mojLift.position.y-3.0f ,            // visina panela
-            (mojLift.minZ + mojLift.maxZ) * 0.6f  // sredina zida
+            mojLift.position.y-2.0f ,            // visina panela
+            (mojLift.minZ + mojLift.maxZ) * 0.55f  // sredina zida
         ),
         glm::vec3(-1, 0, 0), // normal zida (ka unutra)
         0.6f,               // širina panela
         1.2f                // visina panela
     );
 
+    Model lampLift("res/lamp/scene.obj");
+    Model lampFloor("res/lamp/scene.obj");
+    // Pozicija lampe u liftu
+    glm::mat4 lampLiftM = glm::mat4(1.0f);
+    lampLiftM = glm::translate(lampLiftM, glm::vec3(
+        mojLift.maxX - 3.3f,                 // malo ispred zida
+        mojLift.position.y+0.3f ,            // visina panela
+        (mojLift.minZ + mojLift.maxZ) * 0.55f
+    ));
+    lampLiftM = glm::scale(lampLiftM, glm::vec3(1.2f)); // prilagodi veličinu
 
+    // Pozicija lampe na spratu
+    glm::mat4 lampFloorM = glm::mat4(1.0f);
+    lampFloorM = glm::translate(lampFloorM, glm::vec3(
+        3.0f,    // x centra sprata
+        6.7f,    // visina plafona sprata
+        2.0f     // z centra sprata
+    ));
+    lampFloorM = glm::scale(lampFloorM, glm::vec3(1.5f));
 
 
     // Logika lifta
@@ -242,12 +262,30 @@ int main() {
         unifiedShader.setMat4("uV", view);
         unifiedShader.setMat4("uM", modelMatrix);
         unifiedShader.setVec3("uViewPos", cameraPos);
+        unifiedShader.setVec3("uLightPos", glm::vec3(3.0f, 6.2f, 2.0f)); // lampFloor
+        unifiedShader.setVec3("uLightColor", glm::vec3(1.0f, 0.9f, 0.7f)); // npr toplo svetlo
+        // LampFloor
+        unifiedShader.setVec3("uLampPos", glm::vec3(3.0f, 6.2f, 2.0f));
+        unifiedShader.setVec3("uLampColor", glm::vec3(1.0f, 0.9f, 0.7f));
 
+        // LampLift
+        unifiedShader.setVec3("uLiftLampPos", glm::vec3(
+            mojLift.maxX - 3.3f,
+            mojLift.position.y - 0.2f  ,
+            (mojLift.minZ + mojLift.maxZ) * 0.55f
+        ));
+        unifiedShader.setVec3("uLiftLampColor", glm::vec3(1.0f, 0.9f, 0.7f));
         lija.Draw(unifiedShader);
 
         mojLift.update(deltaTime);
         mojLift.draw(unifiedShader);
         panel.Draw(unifiedShader);
+
+        // Crtanje lampi   
+        unifiedShader.setMat4("uM", lampFloorM);
+        lampFloor.Draw(unifiedShader);
+        unifiedShader.setMat4("uM", lampLiftM);
+        lampLift.Draw(unifiedShader);
 
         glfwSwapBuffers(window);
         glfwPollEvents();

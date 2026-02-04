@@ -17,28 +17,23 @@ PanelGrid::PanelGrid(int r, int c)
     )
 {
     std::vector<std::string> paths = {
-        "res/su.png", "res/pr.png",
-        "res/number-one.png", "res/number-2.png",
-        "res/number-3.png", "res/number-four.png",
-        "res/number-five.png", "res/number-six.png",
-        "res/close.png", "res/open.png",
-        "res/stop.png", "res/fan.png"
+    "res/fan.png", "res/stop.png",
+    "res/open.png", "res/close.png",
+    "res/number-six.png", "res/number-five.png",
+    "res/number-four.png", "res/number-3.png",
+    "res/number-2.png", "res/number-one.png",
+    "res/pr.png", "res/su.png"
     };
-
     for (auto& p : paths) {
         Texture t;
         t.id = TextureFromFile(p.c_str(), ".");
-        t.type = "uDiffMap1";   // ⬅️ MORA DA SE POKLAPA SA FRAG SHADEROM
+        t.type = "uDiffMap1";   // MORA DA se poklapa sa frag shaderom
         t.path = p;
         buttonTextures.push_back(t);
     }
 }
 
-void PanelGrid::attachToLiftWall(
-    glm::vec3 pos,
-    glm::vec3 wallNormal,
-    float width,
-    float height)
+void PanelGrid::attachToLiftWall(glm::vec3 pos, glm::vec3 wallNormal, float width, float height)
 {
     normal = glm::normalize(wallNormal);
 
@@ -46,6 +41,7 @@ void PanelGrid::attachToLiftWall(
     model = glm::translate(model, pos);
 
     if (fabs(normal.x) > 0.5f) {
+        // rotacija da bude paralelno sa zidom
         model = glm::rotate(model,
             glm::radians(90.0f),
             glm::vec3(0, 1, 0));
@@ -53,6 +49,7 @@ void PanelGrid::attachToLiftWall(
 
     model = glm::scale(model, glm::vec3(width, height, 1.0f));
 }
+
 void PanelGrid::Draw(Shader& shader)
 {
     shader.use();
@@ -68,14 +65,14 @@ void PanelGrid::Draw(Shader& shader)
 
             glm::mat4 m = model;
 
-            // pozicija ćelije
-            float invR = (rows - 1 - r);
+            // ROTACIJA OKO X da dugmad gledaju ka kameri
+            m = glm::rotate(m, glm::radians(180.0f), glm::vec3(1, 0, 0));
 
+            // pozicija ćelije: levo→desno, odozgo→dole
             m = glm::translate(m,
-                glm::vec3(c * cellW, invR * cellH, 0.001f));
+                glm::vec3(c * cellW, (rows - 1 - r) * cellH, 0.001f));
 
-
-            // centriranje
+            // centriranje dugmeta u ćeliji
             float offX = (cellW * (1.0f - buttonScale)) * 0.5f;
             float offY = (cellH * (1.0f - buttonScale)) * 0.5f;
             m = glm::translate(m, glm::vec3(offX, offY, 0));
@@ -93,5 +90,3 @@ void PanelGrid::Draw(Shader& shader)
         }
     }
 }
-
-
