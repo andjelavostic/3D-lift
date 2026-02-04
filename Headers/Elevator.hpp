@@ -20,7 +20,8 @@ public:
     bool doorExtended;
     int liftFloor;
     std::vector<int> targetFloors;
-    Model* doorModel;      // Model jednog krila vrata
+    unsigned int barrierVAO, barrierVBO;
+    void setupBarrier(); // Funkcija koju ćemo pozvati u konstruktoru
     float doorOpenFactor;
     // Granice za koliziju (unutrašnjost kabine)
     float minX, maxX, minZ, maxZ;
