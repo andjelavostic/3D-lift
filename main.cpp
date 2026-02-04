@@ -191,7 +191,7 @@ int main() {
     panel.attachToLiftWall(
         glm::vec3(
             mojLift.maxX - 5.05f,                 // malo ispred zida
-            mojLift.position.y-1.0f ,            // visina panela
+            mojLift.position.y-2.5f ,            // visina panela
             (mojLift.minZ + mojLift.maxZ) * 0.492f  // sredina zida
         ),
         glm::vec3(-1, 0, 0), // normal zida (ka unutra)

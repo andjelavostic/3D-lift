@@ -39,7 +39,7 @@ void main()
     vec3 viewDir = normalize(uViewPos - chFragPos);
 
     // ---------------- AMBIENT ----------------
-    float ambientStrength = 0.2;
+    float ambientStrength = 0.3;
     vec3 ambient = ambientStrength * uLightColor;
 
     // ---------------- GLOBAL LIGHT ----------------

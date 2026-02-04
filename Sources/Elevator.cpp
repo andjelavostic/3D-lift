@@ -8,7 +8,7 @@ Elevator::Elevator(const char* modelPath, glm::vec3 startPos) {
     speed = 2.0f;
     doorsOpen = false;
     doorOpenTime = 0.0f;
-    doorDuration = 25.0f;
+    doorDuration = 5.0f;
     doorExtended = false;
     doorOpenFactor = 0.0f;
     // Postavi granice na osnovu pozicije (npr. kabina je 2x2 metra)
