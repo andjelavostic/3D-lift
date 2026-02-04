@@ -8,7 +8,7 @@ Elevator::Elevator(const char* modelPath, glm::vec3 startPos) {
     speed = 2.0f;
     doorsOpen = false;
     doorOpenTime = 0.0f;
-    doorDuration = 5.0f;
+    doorDuration = 25.0f;
     doorExtended = false;
     doorOpenFactor = 0.0f;
     // Postavi granice na osnovu pozicije (npr. kabina je 2x2 metra)
@@ -146,19 +146,27 @@ bool Elevator::isInside(glm::vec3 p) {
     return (p.x >= minX && p.x <= maxX && p.z >= minZ && p.z <= maxZ);
 }
 
-bool Elevator::isAtDoor(glm::vec3 p) {
-    // Vrata su na prednjoj ivici (maxZ), u onom opsegu koji si izmerila (4.3 - 5.9)
-    bool atX = (p.x >= 4.3f && p.x <= 5.9f);
-    bool atZ = (p.z >= -7.3f && p.z <= -6.8f); // Prag vrata oko prednje ivice
-    return atX && atZ;
-}
-
 void Elevator::goToFloor(float yHeight) {
     if (!doorsOpen) targetY = yHeight; // Ne kreći se ako su vrata otvorena
 }
+bool Elevator::isAtDoor(glm::vec3 p) {
+    // 1. Provera X ose: Mora biti šire od samog modela vrata da bi bilo lakše ući
+    // Tvoj lift je od 3.06 do 8.82. Vrata su ti na 4.3 do 5.9.
+    bool atX = (p.x >= 4.0f && p.x <= 6.2f);
+
+    // 2. Provera Z ose: maxZ ti je -7.02f. 
+    // Napravićemo "prozor" od -7.5 (unutar lifta) do -6.5 (napolju na spratu)
+    bool atZ = (p.z >= -7.5f && p.z <= -6.5f);
+
+    return atX && atZ;
+}
 
 void Elevator::toggleDoors() {
-    if (abs(targetY - currentY) < 0.05f) { // Otvaraj samo kad lift stoji
+    if (abs(targetY - currentY) < 0.05f) {
         doorsOpen = !doorsOpen;
+        if (doorsOpen) {
+            // RESTARTUJ TAJMER: Inače će se zatvoriti odmah ako je prošlo 5 sekundi
+            doorOpenTime = (float)glfwGetTime();
+        }
     }
 }

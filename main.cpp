@@ -88,30 +88,64 @@ void processInput(GLFWwindow* window, Elevator& lift) {
     if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) nextPos -= right * cameraSpeed;
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) nextPos += right * cameraSpeed;
 
-    // --- STRIKTNA KOLIZIJA ---
-    bool wasIn = lift.isInside(cameraPos);
-    bool willBeIn = lift.isInside(nextPos);
-    bool onFloor = isPointOnFloor(nextPos);
-
-    if (wasIn != willBeIn) {
-        // POKUŠAJ PROLASKA KROZ ZID ILI VRATA
-        if (lift.isAtDoor(nextPos) && lift.doorsOpen) {
-            cameraPos = nextPos; // Dozvoli ulaz/izlaz kroz otvorena vrata
-        }
-        else {
-            // BLOKADA: Ovde udaraš u zidove (sa strane, otpozadi, ili zatvorena vrata)
+    // --- LOGIKA ZA TASTER 'C' (INTERAKCIJA) ---
+    // --- INTERAKCIJA: TASTER 'C' ---
+    static bool cWasPressed = false;
+    if (glfwGetKey(window, GLFW_KEY_C) == GLFW_PRESS) {
+        if (!cWasPressed) {
+            // Proveri da li smo blizu lifta (bilo unutra, bilo spolja)
+            float dist = glm::distance(cameraPos, glm::vec3(lift.position.x, cameraPos.y, lift.position.z));
+            if (dist < 4.0f || lift.isInside(cameraPos)) {
+                lift.toggleDoors();
+            }
+            cWasPressed = true;
         }
     }
     else {
-        // KRETANJE UNUTAR ISTOG PROSTORA
-        if (willBeIn || onFloor) {
-            cameraPos = nextPos;
+        cWasPressed = false;
+    }
+
+    // --- STRIKTNA KOLIZIJA SA MARGINOM---
+    // Provera da li je trenutna i buduća pozicija unutar lifta sa marginom
+    auto isInsideStrict = [&](glm::vec3 pos) {
+        return (pos.x >= lift.minX + 1.0f && pos.x <= lift.maxX - 2.5f &&
+            pos.z >= lift.minZ  && pos.z <= lift.maxZ);
+        };
+
+    bool wasIn = lift.isInside(cameraPos); // Koristimo običan za detekciju stanja
+    bool nextInStrict = isInsideStrict(nextPos);
+    bool onFloor = isPointOnFloor(nextPos);
+
+    if (wasIn) {
+        // --- AKO SMO U LIFTU ---
+        if (nextInStrict) {
+            cameraPos = nextPos; // Slobodno kretanje unutar "zatvora"
+        }
+        else {
+            // Pokušaj izlaska - dozvoli samo na vratima
+            if (lift.isAtDoor(nextPos) && lift.doorsOpen) {
+                cameraPos = nextPos;
+            }
+            // Inače: Ne menjaj cameraPos (udaraš u unutrašnji zid)
+        }
+    }
+    else {
+        // --- AKO SMO VAN LIFTA ---
+        if (!lift.isInside(nextPos)) { // Ovde koristimo običan isInside da ne bismo zapeli za spoljašnji zid
+            if (onFloor) cameraPos = nextPos;
+        }
+        else {
+            // Pokušaj ulaska
+            if (lift.isAtDoor(nextPos) && lift.doorsOpen) {
+                cameraPos = nextPos;
+            }
+            // Inače: Spoljašnji zidovi lifta su neprobojni
         }
     }
 
     // --- VISINA ---
     if (lift.isInside(cameraPos)) {
-        cameraPos.y = lift.currentY + 3.0f;
+        //cameraPos.y = lift.currentY;
     }
     else {
         cameraPos.y = 3.0f; // Tvoj lift je na 5.3f, pa pretpostavljam da je i sprat tu
@@ -198,10 +232,6 @@ int main() {
 
         mojLift.update(deltaTime);
         mojLift.draw(unifiedShader);
-        if (mojLift.isInside(cameraPos)) {
-            cameraPos.y = mojLift.currentY + 1.75f; // Kamera prati lift
-            // Ograniči kretanje unutar mojLift.minX, maxX itd.
-        }
 
         glfwSwapBuffers(window);
         glfwPollEvents();
