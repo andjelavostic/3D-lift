@@ -57,7 +57,15 @@ Ni 1.000000
 d 1.000000
 illum 2
 
-
+newmtl metal-buttons
+Ns 101.960784
+Ka 0.000000 0.000000 0.000000
+Kd 0.367237 0.367237 0.367237
+Ks 0.072165 0.072165 0.072165
+Ni 1.000000
+d 1.000000
+illum 2
+map_Kd elevator.jpg
 
 newmtl metal-flat
 Ns 201.960784

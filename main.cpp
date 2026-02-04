@@ -190,13 +190,13 @@ int main() {
     PanelGrid panel(6,2); // 4 reda, 3 kolone
     panel.attachToLiftWall(
         glm::vec3(
-            mojLift.maxX - 5.0f,                 // malo ispred zida
-            mojLift.position.y-2.0f ,            // visina panela
-            (mojLift.minZ + mojLift.maxZ) * 0.55f  // sredina zida
+            mojLift.maxX - 5.05f,                 // malo ispred zida
+            mojLift.position.y-1.0f ,            // visina panela
+            (mojLift.minZ + mojLift.maxZ) * 0.492f  // sredina zida
         ),
         glm::vec3(-1, 0, 0), // normal zida (ka unutra)
         0.6f,               // širina panela
-        1.2f                // visina panela
+        1.5f                // visina panela
     );
 
     Model lampLift("res/lamp/scene.obj");
