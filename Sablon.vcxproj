@@ -145,6 +145,7 @@
     <ClCompile Include="Headers\shader.hpp" />
     <ClCompile Include="Sources\Elevator.cpp" />
     <ClCompile Include="Sources\Floor.cpp" />
+    <ClCompile Include="Sources\FloorLabels.cpp" />
     <ClCompile Include="Sources\PanelGrid.cpp" />
     <ClCompile Include="Sources\Person.cpp" />
     <ClCompile Include="Sources\Util.cpp" />
@@ -158,6 +159,7 @@
   <ItemGroup>
     <ClInclude Include="Headers\Elevator.hpp" />
     <ClInclude Include="Headers\Floor.hpp" />
+    <ClInclude Include="Headers\FloorLabels.hpp" />
     <ClInclude Include="Headers\mesh.hpp" />
     <ClInclude Include="Headers\model.hpp" />
     <ClInclude Include="Headers\PanelGrid.hpp" />

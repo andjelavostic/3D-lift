@@ -17,6 +17,7 @@
 #include "Headers/model.hpp"
 #include "Headers/Elevator.hpp"
 #include "Headers/PanelGrid.hpp"
+#include "Headers/FloorLabels.hpp"
 
 // Parametri ekrana
 unsigned int wWidth = 800; // Biće ažurirano na rezoluciju monitora
@@ -153,6 +154,7 @@ void processInput(GLFWwindow* window, Elevator& lift) {
     }
 }
 int main() {
+
     if (!glfwInit()) return -1;
 
     // Dobavljanje primarnog monitora i njegove rezolucije za Full Screen
@@ -181,6 +183,17 @@ int main() {
 
     glEnable(GL_DEPTH_TEST);
 
+    std::vector<std::string> floorLabelPaths = {
+    "res/su.png",              // PR
+    "res/number-one.png",
+    "res/number-2.png",
+    "res/number-3.png",
+    "res/number-four.png",
+    "res/number-five.png",
+    "res/number-six.png"
+    };
+
+    FloorLabels floorLabels(floorLabelPaths);
     Model lija("res/scene.obj");
     Shader unifiedShader("basic.vert", "basic.frag");
 
@@ -209,8 +222,6 @@ int main() {
         (mojLift.minZ + mojLift.maxZ) * 0.55f
     ));
     lampLiftM = glm::scale(lampLiftM, glm::vec3(1.2f)); // prilagodi veličinu
-
-
 
     Model plant1("res/plants/prva/scene.obj");
     Model plant2("res/plants/druga/scene.obj");
@@ -321,6 +332,21 @@ int main() {
             lampM = glm::scale(lampM, glm::vec3(1.5f));
             unifiedShader.setMat4("uM", lampM);
             lampFloor.Draw(unifiedShader);
+
+            floorLabels.Draw(
+                unifiedShader,
+                numFloors,
+                floorHeight,
+                glm::vec3(
+                    -2.0f,   // X – isto kao biljke
+                    2.5f,    // Y – visina nalepnice unutar sprata
+                    0.03f     // Z – malo ispred biljaka
+                ),
+                glm::vec3(0, 0, -1), // normal zida (zadnji zid)
+                0.9f
+            );
+
+
         }
 
 
