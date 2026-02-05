@@ -34,6 +34,8 @@ public:
 
     void attachToLiftWall(Elevator* lift, glm::vec3 offset, glm::vec3 wallNormal, float width, float height);
 
+    void pressButton(int buttonIndex);
+
     void Draw(Shader& shader);
 
     int getButtonAtRay(glm::vec3 rayOrigin, glm::vec3 rayDir);

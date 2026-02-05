@@ -116,16 +116,11 @@ void processInput(GLFWwindow* window, Elevator& lift) {
 
     if (glfwGetKey(window, GLFW_KEY_C) == GLFW_PRESS) {
         if (!cWasPressed) {
-
-            // 1️⃣ Izračunaj sprat na kome je čovek
             int callerFloor = currentPlayerFloor;
+
             float callerY = callerFloor * floorHeight;
+            bool liftIsHere = fabs(lift.currentY - callerY) < 0.05f;
 
-
-            bool liftIsHere = fabs(lift.currentY - callerY) < 5.31f;
-            std::cout << "Pozvan lift na sprat " << fabs(lift.currentY - callerY) << std::endl;
-
-            // 3️⃣ Proveri da li smo blizu vrata lifta
             float dist = glm::distance(
                 glm::vec3(cameraPos.x, 0, cameraPos.z),
                 glm::vec3(lift.position.x, 0, lift.position.z)
@@ -133,25 +128,8 @@ void processInput(GLFWwindow* window, Elevator& lift) {
 
             bool nearLift = dist < 4.0f;
 
-            // ===============================
-            // SLUČAJ 1: UNUTRA
-            // ===============================
-            if (lift.isInside(cameraPos)) {
-                if (liftIsHere)
-                    lift.toggleDoors();
-            }
-
-            // ===============================
-            // SLUČAJ 2: ISPRED LIFTA I TU JE
-            // ===============================
-            else if (nearLift && liftIsHere) {
-                lift.openDoors();
-            }
-
-            // ===============================
-            // SLUČAJ 3: ISPRED LIFTA, NIJE TU
-            // ===============================
-            else if (nearLift && !liftIsHere) {
+            // SAMO DODAJ SPRAT
+            if (!liftIsHere) {
                 lift.addTargetFloor(callerFloor);
                 std::cout << "Pozvan lift na sprat " << callerFloor << std::endl;
             }
@@ -162,6 +140,7 @@ void processInput(GLFWwindow* window, Elevator& lift) {
     else {
         cWasPressed = false;
     }
+
 
     // --- STRIKTNA KOLIZIJA SA MARGINOM---
     // Provera da li je trenutna i buduća pozicija unutar lifta sa marginom
@@ -206,12 +185,14 @@ void processInput(GLFWwindow* window, Elevator& lift) {
 
     if (inLift) {
         cameraPos.y = lift.currentY - 1.5f; // kamera prati lift
-        currentPlayerFloor = (int)round(lift.currentY / floorHeight);
+        currentPlayerFloor = (int)round((lift.currentY - lift.liftBaseY) / floorHeight);
+        std::cout << "UNUTRA SAM NA " << currentPlayerFloor << std::endl;
     }
     else {
-        // Van lifta – kamera zadržava Y na normalnoj visini
-        currentPlayerFloor = (int)round(cameraPos.y / floorHeight);
+        currentPlayerFloor = (int)round((cameraPos.y - lift.liftBaseY) / floorHeight);
+        std::cout << "JA SAM NA " << currentPlayerFloor << std::endl;
     }
+
 
 
 

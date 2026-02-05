@@ -63,6 +63,28 @@ void PanelGrid::attachToLiftWall(Elevator* lift, glm::vec3 offset, glm::vec3 wal
 
     model = glm::scale(model, glm::vec3(width, height, 1.0f));
 }
+void PanelGrid::pressButton(int buttonIndex) {
+    if (!attachedLift) return;
+
+    // Aktiviraj dugme vizuelno
+    buttons[buttonIndex].active = true;
+
+    // Mapiranje dugmadi na spratove (primer: dugme 2 → sprat 1, dugme 3 → sprat 2 itd.)
+    int floor = -1;
+    switch (buttonIndex) {
+    case 2: floor = 1; break;
+    case 3: floor = 2; break;
+    case 4: floor = 3; break;
+    case 5: floor = 4; break;
+    case 6: floor = 5; break;
+    case 7: floor = 6; break;
+    }
+
+    if (floor >= 0) {
+        attachedLift->addTargetFloor(floor);
+        std::cout << "Sprat " << floor << " dodan u red." << std::endl;
+    }
+}
 
 void PanelGrid::Draw(Shader& shader)
 {

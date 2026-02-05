@@ -24,53 +24,67 @@ Elevator::Elevator(const char* modelPath, glm::vec3 startPos) {
     maxZ = -7.02f; // Zadnji zid je na -9, vrata su na -6.5
     //setupBarrier();
 }
-void Elevator::update(float deltaTime) {
-    float now = (float)glfwGetTime();
+   void Elevator::update(float deltaTime) {
+        float now = (float)glfwGetTime();
 
-    switch (state) {
+        switch (state) {
 
-    case ElevatorState::IDLE:
-        if (!targetFloors.empty()) {
-            state = ElevatorState::MOVING;
+        case ElevatorState::IDLE:
+            if (!targetFloors.empty()) {
+                // NE KREĆI dok su vrata otvorena
+                if (!doorsOpen) {
+                    state = ElevatorState::MOVING;
+                }
+            }
+            break;
+
+
+        case ElevatorState::MOVING: {
+            if (targetFloors.empty()) {
+                state = ElevatorState::IDLE;
+                break;
+            }
+
+            int nextFloor = targetFloors.front();
+            float nextY = liftBaseY + nextFloor * floorHeight;
+            float dir = glm::sign(nextY - currentY);
+            currentY += dir * speed * deltaTime;
+
+            // Ako smo stigli na sprat
+            if (fabs(currentY - nextY) < 0.05f) {
+                currentY = nextY;
+                liftFloor = nextFloor;
+
+                openDoors();               // Otvori vrata
+                state = ElevatorState::DOORS_OPEN;
+            }
+            break;
         }
-        break;
 
-    case ElevatorState::MOVING: {
-        int nextFloor = targetFloors.front();
+        case ElevatorState::DOORS_OPEN:
+            // Vrata uvek traju barem 5 sekundi
+            if (now - doorOpenTime >= doorDuration) {
+                doorsOpen = false;
+                // Skini sprat iz reda tek kada su vrata zatvorena
+                if (!targetFloors.empty()) targetFloors.erase(targetFloors.begin());
 
-        // Target Y računamo relativno na liftBaseY
-        float targetY = liftBaseY + nextFloor * floorHeight;
-
-        float dir = glm::sign(targetY - currentY);
-        currentY += dir * speed * deltaTime;
-
-        // Ako smo blizu cilja
-        if (fabs(currentY - targetY) < 0.05f) {
-            currentY = targetY;
-            liftFloor = nextFloor;         // trenutno sprat lifta
-            targetFloors.erase(targetFloors.begin());
-
-            openDoors();
-            state = ElevatorState::DOORS_OPEN;
+                // Ako ima još spratova, krećemo na sledeći
+                if (!targetFloors.empty()) {
+                    state = ElevatorState::MOVING;
+                }
+                else {
+                    state = ElevatorState::IDLE;
+                }
+            }
+            break;
         }
-        break;
+
+        // Animacija vrata
+        if (doorsOpen)
+            doorOpenFactor = glm::min(1.0f, doorOpenFactor + deltaTime * 2.0f);
+        else
+            doorOpenFactor = glm::max(0.0f, doorOpenFactor - deltaTime * 2.0f);
     }
-
-
-    case ElevatorState::DOORS_OPEN:
-        if (now - doorOpenTime >= doorDuration) {
-            doorsOpen = false;
-            state = ElevatorState::IDLE;
-        }
-        break;
-    }
-
-    // Smooth animacija vrata
-    if (doorsOpen)
-        doorOpenFactor = glm::min(1.0f, doorOpenFactor + deltaTime * 2.0f);
-    else
-        doorOpenFactor = glm::max(0.0f, doorOpenFactor - deltaTime * 2.0f);
-}
 
 
 void Elevator::openDoors() {
@@ -180,10 +194,10 @@ void Elevator::toggleDoors() {
     }
 }
 void Elevator::addTargetFloor(int floor) {
-    // Proveri da li sprat već postoji u listi da ne duplira
     if (std::find(targetFloors.begin(), targetFloors.end(), floor) == targetFloors.end()) {
         targetFloors.push_back(floor);
-        std::cout << "Dodao sprat " << floor << " u listu ciljeva." << std::endl;
+        std::cout << "Dodao sprat " << floor << " u red ciljeva." << std::endl;
     }
 }
+
 
