@@ -43,7 +43,7 @@ void main()
     vec3 viewDir = normalize(uViewPos - chFragPos);
 
     // ---------------- AMBIENT ----------------
-    float ambientStrength = 0.3;
+    float ambientStrength = 0.5;
     vec3 ambient = ambientStrength * uLightColor;
 
     // ---------------- GLOBAL LIGHT ----------------
@@ -65,10 +65,10 @@ void main()
 
     vec3 lampReflect = reflect(-lampDir, norm);
     float lampSpec = pow(max(dot(viewDir, lampReflect), 0.0), 32);
-    vec3 lampSpecular = 0.4 * lampSpec * uLampColor * lampAtt;
+    vec3 lampSpecular = 0.7 * lampSpec * uLampColor * lampAtt;
 
     // ---------------- LIFT LAMP ----------------
-    vec3 liftDir = normalize(uLiftLampPos - chFragPos);
+    vec3 liftDir = normalize(chFragPos - uLiftLampPos);
     float liftDist = length(uLiftLampPos - chFragPos);
     float liftAtt = attenuation(liftDist);
 
@@ -77,7 +77,7 @@ void main()
 
     vec3 liftReflect = reflect(-liftDir, norm);
     float liftSpec = pow(max(dot(viewDir, liftReflect), 0.0), 32);
-    vec3 liftSpecular = 0.2 * liftSpec * uLiftLampColor * liftAtt;
+    vec3 liftSpecular = 0.7 * liftSpec * uLiftLampColor * liftAtt;
 
     // ---------------- TEXTURE ----------------
     vec3 texColor = texture(uDiffMap1, chUV).rgb;

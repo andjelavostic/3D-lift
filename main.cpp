@@ -265,7 +265,7 @@ int main() {
     // LOKALNI offset lampe u odnosu na centar lifta
     glm::vec3 lampOffset = glm::vec3(
         0.0f,   // X: centar lifta
-        0.2f,   // Y: plafon kabine
+        0.15f,   // Y: plafon kabine
         -2.0f    // Z: sredina kabine
     );
 
@@ -326,19 +326,12 @@ int main() {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         unifiedShader.use();
-        unifiedShader.setVec3("uLightPos", 5.0f, 10.0f, 5.0f);
-        unifiedShader.setVec3("uLightColor", 1.0f, 1.0f, 1.0f);
 
         glm::mat4 view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
         unifiedShader.setMat4("uP", projection);
         unifiedShader.setMat4("uV", view);
         unifiedShader.setMat4("uM", modelMatrix);
         unifiedShader.setVec3("uViewPos", cameraPos);
-        unifiedShader.setVec3("uLightPos", glm::vec3(3.0f, 6.2f, 2.0f)); // lampFloor
-        unifiedShader.setVec3("uLightColor", glm::vec3(1.0f, 0.9f, 0.7f)); // npr toplo svetlo
-        // LampFloor
-        unifiedShader.setVec3("uLampPos", glm::vec3(3.0f, 6.2f, 2.0f));
-        unifiedShader.setVec3("uLampColor", glm::vec3(1.0f, 0.9f, 0.7f));
 
         // LampLift
         glm::vec3 liftLampWorldPos(
@@ -353,6 +346,13 @@ int main() {
         for (int i = 0; i < numFloors; i++) {
 
             float y = i * floorHeight;
+
+            // 1️⃣ Postavi uniform lampe **pre nego što crtaš sprat**
+            glm::vec3 lampPos(3.0f, y + 6.2f, 2.0f);  // pozicija lampe na spratu
+            unifiedShader.setVec3("uLightPos", lampPos); // lampFloor
+            unifiedShader.setVec3("uLightColor", glm::vec3(1.0f, 0.9f, 0.7f)); // npr toplo svetlo
+            unifiedShader.setVec3("uLampPos", lampPos);
+            unifiedShader.setVec3("uLampColor", glm::vec3(1.0f, 0.9f, 0.7f));
 
             // =====================
             // SPRAT (scene.obj)
