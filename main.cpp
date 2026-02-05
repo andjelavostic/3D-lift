@@ -261,6 +261,19 @@ int main() {
         // 2. Input
         processInput(window,mojLift);
 
+        // --- PROVERA KLIKA NA PANEL ---
+        static bool mouseWasPressed = false;
+        bool mouseClick = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
+
+        if (mouseClick && !mouseWasPressed && mojLift.isInside(cameraPos)) {
+            int btn = panel.getButtonAtRay(cameraPos, cameraFront);
+            if (btn != -1) {
+                panel.buttons[btn].active = true;
+                mojLift.addTargetFloor(btn);
+            }
+        }
+        mouseWasPressed = mouseClick;
+
         // 3. Render
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);

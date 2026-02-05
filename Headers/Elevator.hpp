@@ -36,6 +36,8 @@ public:
     void openDoors();
     void extendDoors(); // Dugme za produžavanje
     void closeDoorsImmediately();
+    void addTargetFloor(int floor); // Dodavanje sprata na koji lift treba da ide
+
 };
 
 #endif

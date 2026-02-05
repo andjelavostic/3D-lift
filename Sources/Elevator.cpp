@@ -172,3 +172,11 @@ void Elevator::toggleDoors() {
         }
     }
 }
+void Elevator::addTargetFloor(int floor) {
+    // Proveri da li sprat već postoji u listi da ne duplira
+    if (std::find(targetFloors.begin(), targetFloors.end(), floor) == targetFloors.end()) {
+        targetFloors.push_back(floor);
+        std::cout << "Dodao sprat " << floor << " u listu ciljeva." << std::endl;
+    }
+}
+

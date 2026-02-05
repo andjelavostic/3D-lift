@@ -34,6 +34,10 @@ PanelGrid::PanelGrid(int r, int c)
         t.path = p;
         buttonTextures.push_back(t);
     }
+    for (int i = 0; i < rows * cols; i++) {
+        buttons.push_back(PanelButton{ i, false });
+    }
+
 }
 void PanelGrid::attachToLiftWall(
     glm::vec3 pos,
@@ -126,3 +130,32 @@ void PanelGrid::Draw(Shader& shader)
         }
     }
 }
+int PanelGrid::getButtonAtRay(glm::vec3 rayOrigin, glm::vec3 rayDir) {
+    // invertuj model matricu da ray prebaciš u lokalni prostor panela
+    glm::mat4 invM = glm::inverse(model);
+    glm::vec3 localRayOrigin = glm::vec3(invM * glm::vec4(rayOrigin, 1.0f));
+    glm::vec3 localRayDir = glm::normalize(glm::vec3(invM * glm::vec4(rayDir, 0.0f)));
+
+    // provera paralelnosti sa panelom (z=0 u lokalnom prostoru)
+    if (fabs(localRayDir.z) < 1e-6f) return -1;
+
+    // nađi gde ray udara u panel
+    float t = -localRayOrigin.z / localRayDir.z;
+    if (t < 0) return -1; // iza kamere
+
+    glm::vec3 hitPoint = localRayOrigin + t * localRayDir;
+
+    // dugmad su raspoređena od 0 do 1 u X/Y
+    float cellW = 1.0f / cols;
+    float cellH = 1.0f / rows;
+
+    int col = (int)(hitPoint.x / cellW);
+    int row = (int)(hitPoint.y / cellH);
+
+    // proveri da li je u granicama
+    if (col < 0 || col >= cols || row < 0 || row >= rows) return -1;
+
+    // raspored: gore→dole, levo→desno
+    return (rows - 1 - row) * cols + col;
+}
+

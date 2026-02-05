@@ -8,6 +8,10 @@
 #include "mesh.hpp"
 #include "shader.hpp"
 
+struct PanelButton {
+    int floorIndex;
+    bool active = false;
+};
 class PanelGrid {
 private:
     int rows, cols;
@@ -18,7 +22,9 @@ private:
     glm::mat4 model;
     glm::vec3 normal;
 
+
 public:
+    std::vector<PanelButton> buttons;
     PanelGrid(int r, int c);
 
     void attachToLiftWall(glm::vec3 pos,
@@ -28,24 +34,13 @@ public:
 
     void Draw(Shader& shader);
 
+    int getButtonAtRay(glm::vec3 rayOrigin, glm::vec3 rayDir);
+
     // ray picking
     int checkClick(glm::vec3 rayOrigin,
         glm::vec3 rayDir,
         bool inLift);
 };
-enum PanelButton {
-    BTN_SU = 0,
-    BTN_PR = 1,
-    BTN_1 = 2,
-    BTN_2 = 3,
-    BTN_3 = 4,
-    BTN_4 = 5,
-    BTN_5 = 6,
-    BTN_6 = 7,
-    BTN_CLOSE = 8,
-    BTN_OPEN = 9,
-    BTN_STOP = 10,
-    BTN_FAN = 11
-};
+
 
 #endif
