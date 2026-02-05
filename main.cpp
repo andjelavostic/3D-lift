@@ -210,36 +210,11 @@ int main() {
     ));
     lampLiftM = glm::scale(lampLiftM, glm::vec3(1.2f)); // prilagodi veličinu
 
-    // Pozicija lampe na spratu
-    glm::mat4 lampFloorM = glm::mat4(1.0f);
-    lampFloorM = glm::translate(lampFloorM, glm::vec3(
-        3.0f,    // x centra sprata
-        6.7f,    // visina plafona sprata
-        2.0f     // z centra sprata
-    ));
-    lampFloorM = glm::scale(lampFloorM, glm::vec3(1.5f));
 
 
     Model plant1("res/plants/prva/scene.obj");
     Model plant2("res/plants/druga/scene.obj");
     Model plant3("res/plants/treca/scene.obj");
-
-    // --- Pozicije biljaka na spratu (jedna do druge u uglu) ---
-    glm::vec3 plantBasePos(-3.5f, 0.0f, 2.0f); // x, y, z centra prve biljke
-    float plantSpacing = 1.3f;                  // razmak između biljaka
-
-    // Kreiramo matrice za svaku biljku
-    glm::mat4 plant1M = glm::mat4(1.0f);
-    plant1M = glm::translate(plant1M, plantBasePos);
-    plant1M = glm::scale(plant1M, glm::vec3(0.9f)); // prilagoditi veličinu biljke
-
-    glm::mat4 plant2M = glm::mat4(1.0f);
-    plant2M = glm::translate(plant2M, plantBasePos + glm::vec3(plantSpacing, 0.0f, 0.0f));
-    plant2M = glm::scale(plant2M, glm::vec3(0.9f));
-
-    glm::mat4 plant3M = glm::mat4(1.0f);
-    plant3M = glm::translate(plant3M, plantBasePos + glm::vec3(2 * plantSpacing, 0.0f, 0.0f));
-    plant3M = glm::scale(plant3M, glm::vec3(0.01f));
 
 
     // Logika lifta
@@ -257,9 +232,13 @@ int main() {
     const double targetFPS = 75.0;
     const double frameTimeLimit = 1.0 / targetFPS;
 
+    // --- Spratovi ---
+    const int numFloors = 8;
+    const float floorHeight = 6.7f;
+
     while (!glfwWindowShouldClose(window)) {
         if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
-            std::cout << "Trenutna pozicija: X: " << cameraPos.x << " Z: " << cameraPos.z << std::endl;
+            std::cout << "Trenutna pozicija: X: " << cameraPos.x << " Y: " << cameraPos.y << std::endl;
         }
         double frameStartTime = glfwGetTime();
         
@@ -297,26 +276,63 @@ int main() {
             (mojLift.minZ + mojLift.maxZ) * 0.55f
         ));
         unifiedShader.setVec3("uLiftLampColor", glm::vec3(1.0f, 0.9f, 0.7f));
-        lija.Draw(unifiedShader);
+        for (int i = 0; i < numFloors; i++) {
+
+            float y = i * floorHeight;
+
+            // =====================
+            // SPRAT (scene.obj)
+            // =====================
+            glm::mat4 floorM = glm::mat4(1.0f);
+            floorM = glm::translate(floorM, glm::vec3(0.0f, y, 0.0f));
+            floorM = floorM * modelMatrix;
+
+            unifiedShader.setMat4("uM", floorM);
+            lija.Draw(unifiedShader);
+
+            // =====================
+            // BILJKE
+            // =====================
+            glm::vec3 plantBasePos(-3.5f, y, 2.0f);
+            float plantSpacing = 1.3f;
+
+            glm::mat4 plant1M = glm::translate(glm::mat4(1.0f), plantBasePos);
+            plant1M = glm::scale(plant1M, glm::vec3(0.9f));
+            unifiedShader.setMat4("uM", plant1M);
+            plant1.Draw(unifiedShader);
+
+            glm::mat4 plant2M = glm::translate(glm::mat4(1.0f),
+                plantBasePos + glm::vec3(plantSpacing, 0.0f, 0.0f));
+            plant2M = glm::scale(plant2M, glm::vec3(0.9f));
+            unifiedShader.setMat4("uM", plant2M);
+            plant2.Draw(unifiedShader);
+
+            glm::mat4 plant3M = glm::translate(glm::mat4(1.0f),
+                plantBasePos + glm::vec3(2 * plantSpacing, 0.0f, 0.0f));
+            plant3M = glm::scale(plant3M, glm::vec3(0.01f));
+            unifiedShader.setMat4("uM", plant3M);
+            plant3.Draw(unifiedShader);
+
+            // =====================
+            // LAMPA NA SPRATU
+            // =====================
+            glm::mat4 lampM = glm::translate(glm::mat4(1.0f),
+                glm::vec3(3.0f, y + 6.7f, 2.0f));
+            lampM = glm::scale(lampM, glm::vec3(1.5f));
+            unifiedShader.setMat4("uM", lampM);
+            lampFloor.Draw(unifiedShader);
+        }
+
 
         mojLift.update(deltaTime);
         mojLift.draw(unifiedShader);
         panel.Draw(unifiedShader);
 
         // Crtanje lampi   
-        unifiedShader.setMat4("uM", lampFloorM);
-        lampFloor.Draw(unifiedShader);
+       
         unifiedShader.setMat4("uM", lampLiftM);
         lampLift.Draw(unifiedShader);
-        // Crtanje biljaka
-        unifiedShader.setMat4("uM", plant1M);
-        plant1.Draw(unifiedShader);
-
-        unifiedShader.setMat4("uM", plant2M);
-        plant2.Draw(unifiedShader);
-
-        unifiedShader.setMat4("uM", plant3M);
-        plant3.Draw(unifiedShader);
+        
 
         glfwSwapBuffers(window);
         glfwPollEvents();
