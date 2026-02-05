@@ -434,12 +434,17 @@ int main() {
         glm::mat4 panelWorldModel = panel.getWorldModel();
         auto panelLights = panel.getActiveLightPositions(panelWorldModel);
 
-
         for (int i = 0; i < panelLights.size(); i++) {
-            unifiedShader.setVec3("uExtraLights[" + std::to_string(i) + "]", panelLights[i]);
-            unifiedShader.setVec3("uExtraLightColors[" + std::to_string(i) + "]", glm::vec3(1.0f, 1.0f, 0.7f));
+            unifiedShader.setVec3(
+                "uPanelLightPos[" + std::to_string(i) + "]",
+                panelLights[i]
+            );
+            unifiedShader.setVec3(
+                "uPanelLightColor[" + std::to_string(i) + "]",
+                glm::vec3(1.0f, 1.0f, 0.7f)
+            );
         }
-        unifiedShader.setInt("uNumExtraLights", (int)panelLights.size());
+        unifiedShader.setInt("uNumPanelLights", panelLights.size());
         // Crtanje lampi   
        
         glm::mat4 lampLiftM = glm::translate(glm::mat4(1.0f), liftLampWorldPos);

@@ -83,21 +83,17 @@ void main()
     vec3 texColor = texture(uDiffMap1, chUV).rgb;
 
     // ---------------- PANEL BUTTON LIGHTS ----------------
-    vec3 panelLightAccum = vec3(0.0);
-    for (int i = 0; i < uNumPanelLights; i++) {
-        vec3 pDir = normalize(uPanelLightPos[i] - chFragPos);
-        float pDist = length(uPanelLightPos[i] - chFragPos);
-        float pAtt = attenuation(pDist);
+    
+        vec3 panelGlow = vec3(0.0);
 
-        float pDiff = max(dot(norm, pDir), 0.0);
-        vec3 pDiffuse = pDiff * uPanelLightColor[i] * pAtt;
+        for (int i = 0; i < uNumPanelLights; i++) {
+            float dist = length(chFragPos - uPanelLightPos[i]);
 
-        vec3 pReflect = reflect(-pDir, norm);
-        float pSpec = pow(max(dot(viewDir, pReflect), 0.0), 16); // slabiji sjaj
-        vec3 pSpecular = 0.1 * pSpec * uPanelLightColor[i] * pAtt;
+            // radius glow-a oko dugmeta
+            float glow = smoothstep(0.3, 0.04, dist);
 
-        panelLightAccum += pDiffuse + pSpecular;
-    }
+            panelGlow += glow * uPanelLightColor[i];
+        }
 
 
     // ---------------- FINAL COLOR ----------------
@@ -107,7 +103,7 @@ void main()
       diffuse + specular +
       lampDiffuse + lampSpecular +
       liftDiffuse + liftSpecular +
-      panelLightAccum );
+      panelGlow*0.6 );
 
 
     FragColor = vec4(finalColor, 1.0);
