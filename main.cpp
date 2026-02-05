@@ -24,7 +24,7 @@ unsigned int wWidth = 800; // Biće ažurirano na rezoluciju monitora
 unsigned int wHeight = 600;
 
 // Parametri kamere
-glm::vec3 cameraPos = glm::vec3(0.0f, 1.0f, 10.0f);
+glm::vec3 cameraPos = glm::vec3(0.0f, 3.5f, 10.0f); // start normalna visina
 glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
 glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
 
@@ -36,7 +36,7 @@ float deltaTime = 0.0f;
 float lastFrame = 0.0f;
 
 const int numFloors = 8;
-const float floorHeight = 6.9f;
+const float floorHeight = 7.0f;
 int currentPlayerFloor = 0;
 const float liftBaseY = 5.3f; // početna visina lifta (relativno 0. sprat)
 
@@ -204,10 +204,15 @@ void processInput(GLFWwindow* window, Elevator& lift) {
     // --- VISINA ---
     bool inLift = lift.isInside(cameraPos);
 
-        cameraPos.y = lift.currentY - 1.5f;
-        currentPlayerFloor = (int)round((lift.currentY -lift.liftBaseY) /lift.floorHeight);
-    
- 
+    if (inLift) {
+        cameraPos.y = lift.currentY - 1.5f; // kamera prati lift
+        currentPlayerFloor = (int)round(lift.currentY / floorHeight);
+    }
+    else {
+        // Van lifta – kamera zadržava Y na normalnoj visini
+        currentPlayerFloor = (int)round(cameraPos.y / floorHeight);
+    }
+
 
 
 }
