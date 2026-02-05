@@ -37,6 +37,13 @@ public:
     void extendDoors(); // Dugme za produžavanje
     void closeDoorsImmediately();
     void addTargetFloor(int floor); // Dodavanje sprata na koji lift treba da ide
+    enum class ElevatorState {
+        IDLE,
+        MOVING,
+        DOORS_OPEN
+    };
+
+    ElevatorState state = ElevatorState::IDLE;
 
 };
 

@@ -35,6 +35,9 @@ float lastX, lastY;
 float deltaTime = 0.0f;
 float lastFrame = 0.0f;
 
+int currentPlayerFloor = 0;
+
+
 // Callback za miš
 void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
     float centerX = wWidth / 2.0;
@@ -90,16 +93,50 @@ void processInput(GLFWwindow* window, Elevator& lift) {
     if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) nextPos -= right * cameraSpeed;
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) nextPos += right * cameraSpeed;
 
-    // --- LOGIKA ZA TASTER 'C' (INTERAKCIJA) ---
     // --- INTERAKCIJA: TASTER 'C' ---
     static bool cWasPressed = false;
+
     if (glfwGetKey(window, GLFW_KEY_C) == GLFW_PRESS) {
         if (!cWasPressed) {
-            // Proveri da li smo blizu lifta (bilo unutra, bilo spolja)
-            float dist = glm::distance(cameraPos, glm::vec3(lift.position.x, cameraPos.y, lift.position.z));
-            if (dist < 4.0f || lift.isInside(cameraPos)) {
-                lift.toggleDoors();
+
+            // 1️⃣ Izračunaj sprat na kome je čovek
+            int callerFloor = currentPlayerFloor;
+            float callerY = callerFloor * 6.7f;
+
+            bool liftIsHere = fabs(lift.currentY - callerY) < 5.31f;
+            std::cout << "Pozvan lift na sprat " << fabs(lift.currentY - callerY) << std::endl;
+
+            // 3️⃣ Proveri da li smo blizu vrata lifta
+            float dist = glm::distance(
+                glm::vec3(cameraPos.x, 0, cameraPos.z),
+                glm::vec3(lift.position.x, 0, lift.position.z)
+            );
+
+            bool nearLift = dist < 4.0f;
+
+            // ===============================
+            // SLUČAJ 1: UNUTRA
+            // ===============================
+            if (lift.isInside(cameraPos)) {
+                if (liftIsHere)
+                    lift.toggleDoors();
             }
+
+            // ===============================
+            // SLUČAJ 2: ISPRED LIFTA I TU JE
+            // ===============================
+            else if (nearLift && liftIsHere) {
+                lift.openDoors();
+            }
+
+            // ===============================
+            // SLUČAJ 3: ISPRED LIFTA, NIJE TU
+            // ===============================
+            else if (nearLift && !liftIsHere) {
+                lift.addTargetFloor(callerFloor);
+                std::cout << "Pozvan lift na sprat " << callerFloor << std::endl;
+            }
+
             cWasPressed = true;
         }
     }
@@ -147,7 +184,7 @@ void processInput(GLFWwindow* window, Elevator& lift) {
 
     // --- VISINA ---
     if (lift.isInside(cameraPos)) {
-        //cameraPos.y = lift.currentY;
+        cameraPos.y = lift.currentY - 1.5f; // visina očiju
     }
     else {
         cameraPos.y = 3.0f; // Tvoj lift je na 5.3f, pa pretpostavljam da je i sprat tu
@@ -201,27 +238,28 @@ int main() {
     Shader panelShader("panel.vert", "panel.frag");
 
     PanelGrid panel(6,2); // 4 reda, 3 kolone
-    panel.attachToLiftWall(
-        glm::vec3(
-            mojLift.maxX - 5.05f,                 // malo ispred zida
-            mojLift.position.y-2.5f ,            // visina panela
-            (mojLift.minZ + mojLift.maxZ) * 0.492f  // sredina zida
-        ),
-        glm::vec3(-1, 0, 0), // normal zida (ka unutra)
-        0.6f,               // širina panela
-        1.5f                // visina panela
-    );
+
+   
 
     Model lampLift("res/lamp/scene.obj");
     Model lampFloor("res/lamp/scene.obj");
-    // Pozicija lampe u liftu
-    glm::mat4 lampLiftM = glm::mat4(1.0f);
-    lampLiftM = glm::translate(lampLiftM, glm::vec3(
-        mojLift.maxX - 3.3f,                 // malo ispred zida
-        mojLift.position.y+0.3f ,            // visina panela
-        (mojLift.minZ + mojLift.maxZ) * 0.55f
-    ));
-    lampLiftM = glm::scale(lampLiftM, glm::vec3(1.2f)); // prilagodi veličinu
+
+
+    // Offset relativno na lift
+    // LOKALNI offset panela u kabini lifta
+    glm::vec3 panelOffset = glm::vec3(
+        -1.75f,   // X: levi zid lifta
+        -2.5f,   // Y: visina panela od poda
+        -1.1f   // Z: malo ka unutra
+    );
+
+
+    // LOKALNI offset lampe u odnosu na centar lifta
+    glm::vec3 lampOffset = glm::vec3(
+        0.0f,   // X: centar lifta
+        0.2f,   // Y: plafon kabine
+        -2.0f    // Z: sredina kabine
+    );
 
     Model plant1("res/plants/prva/scene.obj");
     Model plant2("res/plants/druga/scene.obj");
@@ -294,12 +332,15 @@ int main() {
         unifiedShader.setVec3("uLampColor", glm::vec3(1.0f, 0.9f, 0.7f));
 
         // LampLift
-        unifiedShader.setVec3("uLiftLampPos", glm::vec3(
-            mojLift.maxX - 3.3f,
-            mojLift.position.y - 0.2f  ,
-            (mojLift.minZ + mojLift.maxZ) * 0.55f
-        ));
+        glm::vec3 liftLampWorldPos(
+            mojLift.position.x + lampOffset.x,
+            mojLift.currentY + lampOffset.y,
+            mojLift.position.z + lampOffset.z
+        );
+
+        unifiedShader.setVec3("uLiftLampPos", liftLampWorldPos);
         unifiedShader.setVec3("uLiftLampColor", glm::vec3(1.0f, 0.9f, 0.7f));
+
         for (int i = 0; i < numFloors; i++) {
 
             float y = i * floorHeight;
@@ -364,14 +405,45 @@ int main() {
 
 
         mojLift.update(deltaTime);
-        mojLift.draw(unifiedShader);
-        panel.Draw(unifiedShader);
+        for (int i = 0; i < panel.buttons.size(); i++) {
+            if (panel.buttons[i].active && mojLift.liftFloor == i) {
+                panel.buttons[i].active = false; // dugme ugasimo
+            }
+        }
 
+        mojLift.draw(unifiedShader);
+        panel.attachToLiftWall(
+            &mojLift,
+            panelOffset,              // LOKALNI offset
+            glm::vec3(-1, 0, 0),       // levi zid lifta
+            0.6f,                      // širina panela
+            1.5f                       // visina panela
+        );
+
+        panel.Draw(unifiedShader);
+        // Svetla dugmadi
+        glm::mat4 panelWorldModel = panel.getWorldModel();
+        auto panelLights = panel.getActiveLightPositions(panelWorldModel);
+
+
+        for (int i = 0; i < panelLights.size(); i++) {
+            unifiedShader.setVec3("uExtraLights[" + std::to_string(i) + "]", panelLights[i]);
+            unifiedShader.setVec3("uExtraLightColors[" + std::to_string(i) + "]", glm::vec3(1.0f, 1.0f, 0.7f));
+        }
+        unifiedShader.setInt("uNumExtraLights", (int)panelLights.size());
         // Crtanje lampi   
        
+        glm::mat4 lampLiftM = glm::translate(glm::mat4(1.0f), liftLampWorldPos);
+        lampLiftM = glm::scale(lampLiftM, glm::vec3(1.2f));
+
         unifiedShader.setMat4("uM", lampLiftM);
         lampLift.Draw(unifiedShader);
-        
+
+
+        if (!mojLift.isInside(cameraPos)) {
+            currentPlayerFloor = (int)round(cameraPos.y / floorHeight);
+        }
+
 
         glfwSwapBuffers(window);
         glfwPollEvents();

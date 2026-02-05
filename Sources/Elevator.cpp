@@ -27,41 +27,47 @@ Elevator::Elevator(const char* modelPath, glm::vec3 startPos) {
 void Elevator::update(float deltaTime) {
     float now = (float)glfwGetTime();
 
-    // Logika tajmera (tvojih 5 sekundi)
-    if (doorsOpen) {
-        if (now - doorOpenTime >= doorDuration) {
-            doorsOpen = false;
+    switch (state) {
+
+    case ElevatorState::IDLE:
+        if (!targetFloors.empty()) {
+            state = ElevatorState::MOVING;
         }
-        // Glatko otvaranje
-        if (doorOpenFactor < 1.0f) doorOpenFactor += deltaTime * 2.0f;
-    }
-    else {
-        // Glatko zatvaranje
-        if (doorOpenFactor > 0.0f) doorOpenFactor -= deltaTime * 2.0f;
-    }
+        break;
 
-    // Ograniči faktor između 0 i 1
-    doorOpenFactor = glm::clamp(doorOpenFactor, 0.0f, 1.0f);
-
-
-    // Pomeranje ka cilju (ako postoji sprat u listi)
-    if (!targetFloors.empty()) {
+    case ElevatorState::MOVING: {
         int nextFloor = targetFloors.front();
-        float targetY = nextFloor * 10.0f; // Pretpostavka: sprat je visok 10 jedinica
+        float targetY = nextFloor * 6.7f;
 
-        if (abs(currentY - targetY) > 0.05f) {
-            if (currentY < targetY) currentY += speed * deltaTime;
-            else currentY -= speed * deltaTime;
-        }
-        else {
-            // Stigli smo na sprat
+        float dir = glm::sign(targetY - currentY);
+        currentY += dir * speed * deltaTime;
+
+        if (fabs(currentY - targetY) < 0.05f) {
             currentY = targetY;
             liftFloor = nextFloor;
-            openDoors(); // Otvori vrata na 5 sekundi
-            targetFloors.erase(targetFloors.begin()); // Izbaci taj sprat iz liste
+            targetFloors.erase(targetFloors.begin());
+
+            openDoors();
+            state = ElevatorState::DOORS_OPEN;
         }
+        break;
     }
+
+    case ElevatorState::DOORS_OPEN:
+        if (now - doorOpenTime >= doorDuration) {
+            doorsOpen = false;
+            state = ElevatorState::IDLE;
+        }
+        break;
+    }
+
+    // Smooth animacija vrata
+    if (doorsOpen)
+        doorOpenFactor = glm::min(1.0f, doorOpenFactor + deltaTime * 2.0f);
+    else
+        doorOpenFactor = glm::max(0.0f, doorOpenFactor - deltaTime * 2.0f);
 }
+
 
 void Elevator::openDoors() {
     doorsOpen = true;

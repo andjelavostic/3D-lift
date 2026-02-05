@@ -31,6 +31,10 @@ float attenuation(float dist)
     float quadratic = 0.07;
     return 1.0 / (constant + linear * dist + quadratic * dist * dist);
 }
+// Dodatna svetla sa dugmadi (maks 16)
+uniform int uNumPanelLights;
+uniform vec3 uPanelLightPos[12];
+uniform vec3 uPanelLightColor[12];
 
 void main()
 {
@@ -78,13 +82,33 @@ void main()
     // ---------------- TEXTURE ----------------
     vec3 texColor = texture(uDiffMap1, chUV).rgb;
 
+    // ---------------- PANEL BUTTON LIGHTS ----------------
+    vec3 panelLightAccum = vec3(0.0);
+    for (int i = 0; i < uNumPanelLights; i++) {
+        vec3 pDir = normalize(uPanelLightPos[i] - chFragPos);
+        float pDist = length(uPanelLightPos[i] - chFragPos);
+        float pAtt = attenuation(pDist);
+
+        float pDiff = max(dot(norm, pDir), 0.0);
+        vec3 pDiffuse = pDiff * uPanelLightColor[i] * pAtt;
+
+        vec3 pReflect = reflect(-pDir, norm);
+        float pSpec = pow(max(dot(viewDir, pReflect), 0.0), 16); // slabiji sjaj
+        vec3 pSpecular = 0.1 * pSpec * uPanelLightColor[i] * pAtt;
+
+        panelLightAccum += pDiffuse + pSpecular;
+    }
+
+
     // ---------------- FINAL COLOR ----------------
     vec3 finalColor =
-        texColor *
-        ( ambient +
-          diffuse + specular +
-          lampDiffuse + lampSpecular +
-          liftDiffuse + liftSpecular );
+    texColor *
+    ( ambient +
+      diffuse + specular +
+      lampDiffuse + lampSpecular +
+      liftDiffuse + liftSpecular +
+      panelLightAccum );
+
 
     FragColor = vec4(finalColor, 1.0);
 }

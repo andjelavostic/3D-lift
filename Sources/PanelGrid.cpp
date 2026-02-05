@@ -39,52 +39,50 @@ PanelGrid::PanelGrid(int r, int c)
     }
 
 }
-void PanelGrid::attachToLiftWall(
-    glm::vec3 pos,
-    glm::vec3 wallNormal,
-    float width,
-    float height)
+void PanelGrid::attachToLiftWall(Elevator* lift, glm::vec3 offset, glm::vec3 wallNormal, float width, float height)
 {
+    attachedLift = lift;
+    liftOffset = offset;
+
     normal = glm::normalize(wallNormal);
 
-    model = glm::mat4(1.0f);
-    model = glm::translate(model, pos);
+    model = glm::mat4(1.0f); // početna model matrica = identity
 
+    // sada pozicija i rotacija ostaju iste, ali se offset dodaje u Draw
     // LEVI ZID (X-)
     if (normal.x < -0.5f) {
-        model = glm::rotate(
-            model,
-            glm::radians(90.0f),   // ⬅️ KLJUČNO: +90
-            glm::vec3(0, 1, 0)
-        );
+        model = glm::rotate(model, glm::radians(90.0f), glm::vec3(0, 1, 0));
     }
-    // DESNI ZID (X+)
     else if (normal.x > 0.5f) {
-        model = glm::rotate(
-            model,
-            glm::radians(-90.0f),
-            glm::vec3(0, 1, 0)
-        );
+        model = glm::rotate(model, glm::radians(-90.0f), glm::vec3(0, 1, 0));
     }
-    // ZADNJI ZID (Z-)
     else if (normal.z < -0.5f) {
-        model = glm::rotate(
-            model,
-            glm::radians(180.0f),
-            glm::vec3(0, 1, 0)
-        );
+        model = glm::rotate(model, glm::radians(180.0f), glm::vec3(0, 1, 0));
     }
-    // PREDNJI ZID (Z+)
-    // nema rotacije – quad već gleda ka +Z
+    // Z+ nema rotacije
 
     model = glm::scale(model, glm::vec3(width, height, 1.0f));
 }
-
 
 void PanelGrid::Draw(Shader& shader)
 {
     shader.use();
     shader.setInt("uDiffMap1", 0);
+
+    glm::mat4 baseModel = model;
+
+    // Ako je panel povezan sa liftom, dodaj liftovu poziciju
+    if (attachedLift) {
+        glm::vec3 liftWorldPos(
+            attachedLift->position.x,
+            attachedLift->currentY,
+            attachedLift->position.z
+        );
+
+        baseModel =
+            glm::translate(glm::mat4(1.0f), liftWorldPos + liftOffset)
+            * baseModel;
+    }
 
     float cellW = 1.0f / cols;
     float cellH = 1.0f / rows;
@@ -92,21 +90,14 @@ void PanelGrid::Draw(Shader& shader)
 
     int i = 0;
 
-    // GORE → DOLE, LEVO → DESNO
     for (int r = rows - 1; r >= 0; r--) {
         for (int c = 0; c < cols; c++) {
+            if (i >= buttonTextures.size()) return;
 
-            if (i >= buttonTextures.size())
-                return;
-
-            glm::mat4 m = model;
+            glm::mat4 m = baseModel;
 
             // pozicija ćelije
-            m = glm::translate(m, glm::vec3(
-                c * cellW,
-                r * cellH,
-                0.002f
-            ));
+            m = glm::translate(m, glm::vec3(c * cellW, r * cellH, 0.002f));
 
             // centriranje dugmeta
             float offX = (cellW * (1.0f - buttonScale)) * 0.5f;
@@ -114,25 +105,43 @@ void PanelGrid::Draw(Shader& shader)
             m = glm::translate(m, glm::vec3(offX, offY, 0.0f));
 
             // skaliranje dugmeta
-            m = glm::scale(m, glm::vec3(
-                cellW * buttonScale,
-                cellH * buttonScale,
-                1.0f
-            ));
+            m = glm::scale(m, glm::vec3(cellW * buttonScale, cellH * buttonScale, 1.0f));
 
             shader.setMat4("uM", m);
+
+            if (buttons[i].active)
+                shader.setVec3("uColor", 1.0f, 1.0f, 0.0f);
+            else
+                shader.setVec3("uColor", 1.0f, 1.0f, 1.0f);
 
             glActiveTexture(GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, buttonTextures[i].id);
 
             panelMesh.Draw(shader);
+
             i++;
         }
     }
 }
+
 int PanelGrid::getButtonAtRay(glm::vec3 rayOrigin, glm::vec3 rayDir) {
-    // invertuj model matricu da ray prebaciš u lokalni prostor panela
-    glm::mat4 invM = glm::inverse(model);
+    // 1️⃣ Kreiraj globalnu matricu panela (isto kao u Draw)
+    glm::mat4 baseModel = model;
+    if (attachedLift) {
+        glm::vec3 liftWorldPos(
+            attachedLift->position.x,
+            attachedLift->currentY,
+            attachedLift->position.z
+        );
+
+        baseModel =
+            glm::translate(glm::mat4(1.0f), liftWorldPos + liftOffset)
+            * baseModel;
+
+    }
+
+    // 2️⃣ Invertuj globalnu matricu da ray prebaciš u lokalni prostor panela
+    glm::mat4 invM = glm::inverse(baseModel);
     glm::vec3 localRayOrigin = glm::vec3(invM * glm::vec4(rayOrigin, 1.0f));
     glm::vec3 localRayDir = glm::normalize(glm::vec3(invM * glm::vec4(rayDir, 0.0f)));
 
@@ -157,5 +166,40 @@ int PanelGrid::getButtonAtRay(glm::vec3 rayOrigin, glm::vec3 rayDir) {
 
     // raspored: gore→dole, levo→desno
     return (rows - 1 - row) * cols + col;
+}
+std::vector<glm::vec3> PanelGrid::getActiveLightPositions(glm::mat4 panelModel) {
+    std::vector<glm::vec3> lights;
+    float cellW = 1.0f / cols;
+    float cellH = 1.0f / rows;
+    float buttonScale = 0.75f;
+
+    int i = 0;
+    for (int r = rows - 1; r >= 0; r--) {
+        for (int c = 0; c < cols; c++) {
+            if (i >= buttons.size()) break;
+            if (buttons[i].active) {
+                // pozicija dugmeta u lokalnom prostoru panela
+                glm::vec3 localPos(
+                    c * cellW + (cellW * buttonScale) * 0.5f,
+                    r * cellH + (cellH * buttonScale) * 0.5f,
+                    0.01f  // malo ispred panela
+                );
+                // transformiši u globalne koordinate
+                glm::vec3 worldPos = glm::vec3(panelModel * glm::vec4(localPos, 1.0f));
+                lights.push_back(worldPos);
+            }
+            i++;
+        }
+    }
+    return lights;
+}
+glm::mat4 PanelGrid::getWorldModel() const {
+    glm::vec3 liftWorldPos(
+        attachedLift->position.x,
+        attachedLift->currentY,
+        attachedLift->position.z
+    );
+
+    return glm::translate(glm::mat4(1.0f), liftWorldPos + liftOffset) * model;
 }
 

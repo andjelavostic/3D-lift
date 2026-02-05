@@ -7,13 +7,15 @@
 
 #include "mesh.hpp"
 #include "shader.hpp"
+#include "Elevator.hpp"
 
 struct PanelButton {
     int floorIndex;
     bool active = false;
+    glm::vec3 localPos;  // pozicija dugmeta u lokalnim koordinatama panela
 };
 class PanelGrid {
-private:
+public:
     int rows, cols;
 
     Mesh panelMesh;
@@ -21,25 +23,31 @@ private:
 
     glm::mat4 model;
     glm::vec3 normal;
+    std::vector<Texture> buttonTexturesActive; 
 
 
-public:
     std::vector<PanelButton> buttons;
     PanelGrid(int r, int c);
 
-    void attachToLiftWall(glm::vec3 pos,
-        glm::vec3 wallNormal,
-        float width,
-        float height);
+    Elevator* attachedLift = nullptr;   // lift na koji je panel pričvršćen
+    glm::vec3 liftOffset = glm::vec3(0); // offset u odnosu na lift
+
+    void attachToLiftWall(Elevator* lift, glm::vec3 offset, glm::vec3 wallNormal, float width, float height);
 
     void Draw(Shader& shader);
 
     int getButtonAtRay(glm::vec3 rayOrigin, glm::vec3 rayDir);
 
+    std::vector<glm::vec3> getActiveLightPositions(glm::mat4 panelModel);
+
+    glm::mat4 getWorldModel() const;
+
     // ray picking
     int checkClick(glm::vec3 rayOrigin,
         glm::vec3 rayDir,
         bool inLift);
+    
+
 };
 
 
