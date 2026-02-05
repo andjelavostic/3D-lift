@@ -36,15 +36,11 @@ float lastFrame = 0.0f;
 
 // Callback za miš
 void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
-    if (firstMouse) {
-        lastX = xpos;
-        lastY = ypos;
-        firstMouse = false;
-    }
-    float xoffset = xpos - lastX;
-    float yoffset = lastY - ypos;
-    lastX = xpos;
-    lastY = ypos;
+    float centerX = wWidth / 2.0;
+    float centerY = wHeight / 2.0;
+
+    float xoffset = xpos - centerX;
+    float yoffset = centerY - ypos; // y je obrnuto u OpenGL
 
     float sensitivity = 0.1f;
     xoffset *= sensitivity;
@@ -61,7 +57,11 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
     front.y = sin(glm::radians(pitch));
     front.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
     cameraFront = glm::normalize(front);
+
+    // Resetuj kursorsku poziciju u centar
+    glfwSetCursorPos(window, centerX, centerY);
 }
+
 bool isPointOnFloor(glm::vec3 p) {
     // 1. Levi vertikalni krak (od X -11 do 0.5, Z 1 do 11)
     bool part1 = (p.x >= -11.5f && p.x <= 0.5f && p.z >= 1.0f && p.z <= 11.5f);
@@ -174,7 +174,7 @@ int main() {
         return -2;
     }
     glfwMakeContextCurrent(window);
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
     glfwSetCursorPosCallback(window, mouse_callback);
 
     if (glewInit() != GLEW_OK) return -3;
