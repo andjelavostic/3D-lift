@@ -1,0 +1,25 @@
+# MTL file - created by a modified js OBJExporter
+
+newmtl lambert3
+Tr 0.0000
+Tf 1.0000 1.0000 1.0000
+illum 1
+Pr 0.5287635162316685
+Pds 1
+Pl 1
+Ka 1 1 1
+Kd 0.8700978898221403 0.8700978898221403 0.8700978898221403
+Ke 0 0 0
+map_Kd lambert3.png
+
+newmtl lambert2
+Tr 0.0000
+Tf 1.0000 1.0000 1.0000
+illum 1
+Pr 0.3946678694639831
+Pds 1
+Pl 1
+Ka 1 1 1
+Kd 1 1 1
+Ke 0 0 0
+map_Kd lambert2.png

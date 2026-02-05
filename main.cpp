@@ -220,6 +220,28 @@ int main() {
     lampFloorM = glm::scale(lampFloorM, glm::vec3(1.5f));
 
 
+    Model plant1("res/plants/prva/scene.obj");
+    Model plant2("res/plants/druga/scene.obj");
+    Model plant3("res/plants/treca/scene.obj");
+
+    // --- Pozicije biljaka na spratu (jedna do druge u uglu) ---
+    glm::vec3 plantBasePos(-3.5f, 0.0f, 2.0f); // x, y, z centra prve biljke
+    float plantSpacing = 1.3f;                  // razmak između biljaka
+
+    // Kreiramo matrice za svaku biljku
+    glm::mat4 plant1M = glm::mat4(1.0f);
+    plant1M = glm::translate(plant1M, plantBasePos);
+    plant1M = glm::scale(plant1M, glm::vec3(0.9f)); // prilagoditi veličinu biljke
+
+    glm::mat4 plant2M = glm::mat4(1.0f);
+    plant2M = glm::translate(plant2M, plantBasePos + glm::vec3(plantSpacing, 0.0f, 0.0f));
+    plant2M = glm::scale(plant2M, glm::vec3(0.9f));
+
+    glm::mat4 plant3M = glm::mat4(1.0f);
+    plant3M = glm::translate(plant3M, plantBasePos + glm::vec3(2 * plantSpacing, 0.0f, 0.0f));
+    plant3M = glm::scale(plant3M, glm::vec3(0.01f));
+
+
     // Logika lifta
     float liftY = 0.0f;          // Trenutna visina lifta
     float targetLiftY = 0.0f;    // Visina sprata na koji lift treba da ide
@@ -286,6 +308,15 @@ int main() {
         lampFloor.Draw(unifiedShader);
         unifiedShader.setMat4("uM", lampLiftM);
         lampLift.Draw(unifiedShader);
+        // Crtanje biljaka
+        unifiedShader.setMat4("uM", plant1M);
+        plant1.Draw(unifiedShader);
+
+        unifiedShader.setMat4("uM", plant2M);
+        plant2.Draw(unifiedShader);
+
+        unifiedShader.setMat4("uM", plant3M);
+        plant3.Draw(unifiedShader);
 
         glfwSwapBuffers(window);
         glfwPollEvents();
