@@ -35,8 +35,26 @@ float lastX, lastY;
 float deltaTime = 0.0f;
 float lastFrame = 0.0f;
 
+const int numFloors = 8;
+const float floorHeight = 6.9f;
 int currentPlayerFloor = 0;
+const float liftBaseY = 5.3f; // početna visina lifta (relativno 0. sprat)
 
+
+// Mapiranje dugmeta na stvarni sprat
+int getFloorFromButton(int btnIndex) {
+    switch (btnIndex) {
+    case 0: return 0;  // Suteren
+    case 1: return 1;  // Prizemlje
+    case 2: return 2;  // 1. sprat
+    case 3: return 3;  // 2. sprat
+    case 4: return 4;  // 3. sprat
+    case 5: return 5;  // 4. sprat
+    case 6: return 6;  // 5. sprat
+    case 7: return 7;  // 6. sprat
+    default: return 0;
+    }
+}
 
 // Callback za miš
 void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
@@ -101,7 +119,8 @@ void processInput(GLFWwindow* window, Elevator& lift) {
 
             // 1️⃣ Izračunaj sprat na kome je čovek
             int callerFloor = currentPlayerFloor;
-            float callerY = callerFloor * 6.7f;
+            float callerY = callerFloor * floorHeight;
+
 
             bool liftIsHere = fabs(lift.currentY - callerY) < 5.31f;
             std::cout << "Pozvan lift na sprat " << fabs(lift.currentY - callerY) << std::endl;
@@ -183,12 +202,14 @@ void processInput(GLFWwindow* window, Elevator& lift) {
     }
 
     // --- VISINA ---
-    if (lift.isInside(cameraPos)) {
-        cameraPos.y = lift.currentY - 1.5f; // visina očiju
-    }
-    else {
-        cameraPos.y = 3.0f; // Tvoj lift je na 5.3f, pa pretpostavljam da je i sprat tu
-    }
+    bool inLift = lift.isInside(cameraPos);
+
+        cameraPos.y = lift.currentY - 1.5f;
+        currentPlayerFloor = (int)round((lift.currentY -lift.liftBaseY) /lift.floorHeight);
+    
+ 
+
+
 }
 int main() {
 
@@ -221,7 +242,8 @@ int main() {
     glEnable(GL_DEPTH_TEST);
 
     std::vector<std::string> floorLabelPaths = {
-    "res/su.png",              // PR
+    "res/su.png",
+    "res/pr.png",
     "res/number-one.png",
     "res/number-2.png",
     "res/number-3.png",
@@ -234,7 +256,7 @@ int main() {
     Model lija("res/scene.obj");
     Shader unifiedShader("basic.vert", "basic.frag");
 
-    Elevator mojLift("res/elevator.obj", glm::vec3(5.5f, 5.3f, -7.5f));
+    Elevator mojLift("res/elevator.obj", glm::vec3(5.5f,5.3f, -7.5f));
     Shader panelShader("panel.vert", "panel.frag");
 
     PanelGrid panel(6,2); // 4 reda, 3 kolone
@@ -282,8 +304,7 @@ int main() {
     const double frameTimeLimit = 1.0 / targetFPS;
 
     // --- Spratovi ---
-    const int numFloors = 8;
-    const float floorHeight = 6.7f;
+    
 
     while (!glfwWindowShouldClose(window)) {
         if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
@@ -307,8 +328,10 @@ int main() {
             int btn = panel.getButtonAtRay(cameraPos, cameraFront);
             if (btn != -1) {
                 panel.buttons[btn].active = true;
-                mojLift.addTargetFloor(btn);
+                int targetFloor = getFloorFromButton(btn);  // ← ovo mapira dugme na pravi sprat
+                mojLift.addTargetFloor(targetFloor);
             }
+
         }
         mouseWasPressed = mouseClick;
 
@@ -382,7 +405,7 @@ int main() {
             // LAMPA NA SPRATU
             // =====================
             glm::mat4 lampM = glm::translate(glm::mat4(1.0f),
-                glm::vec3(3.0f, y + 6.7f, 2.0f));
+                glm::vec3(3.0f, y + 6.6f, 2.0f));
             lampM = glm::scale(lampM, glm::vec3(1.5f));
             unifiedShader.setMat4("uM", lampM);
             lampFloor.Draw(unifiedShader);
@@ -439,10 +462,6 @@ int main() {
         unifiedShader.setMat4("uM", lampLiftM);
         lampLift.Draw(unifiedShader);
 
-
-        if (!mojLift.isInside(cameraPos)) {
-            currentPlayerFloor = (int)round(cameraPos.y / floorHeight);
-        }
 
 
         glfwSwapBuffers(window);

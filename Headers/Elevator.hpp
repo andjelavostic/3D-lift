@@ -25,6 +25,8 @@ public:
     float doorOpenFactor;
     // Granice za koliziju (unutrašnjost kabine)
     float minX, maxX, minZ, maxZ;
+    float liftBaseY = 5.3f; // početna visina sprata 0
+    float floorHeight = 6.9f; // visina između spratova
 
     Elevator(const char* modelPath, glm::vec3 startPos);
     void draw(Shader& shader);

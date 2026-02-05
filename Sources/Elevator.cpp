@@ -37,14 +37,17 @@ void Elevator::update(float deltaTime) {
 
     case ElevatorState::MOVING: {
         int nextFloor = targetFloors.front();
-        float targetY = nextFloor * 6.7f;
+
+        // Target Y računamo relativno na liftBaseY
+        float targetY = liftBaseY + nextFloor * floorHeight;
 
         float dir = glm::sign(targetY - currentY);
         currentY += dir * speed * deltaTime;
 
+        // Ako smo blizu cilja
         if (fabs(currentY - targetY) < 0.05f) {
             currentY = targetY;
-            liftFloor = nextFloor;
+            liftFloor = nextFloor;         // trenutno sprat lifta
             targetFloors.erase(targetFloors.begin());
 
             openDoors();
@@ -52,6 +55,7 @@ void Elevator::update(float deltaTime) {
         }
         break;
     }
+
 
     case ElevatorState::DOORS_OPEN:
         if (now - doorOpenTime >= doorDuration) {
@@ -124,9 +128,6 @@ void Elevator::draw(Shader& shader) {
         // Počinjemo od ISTE pozicije gde je i lift
         glm::mat4 barrierMat = baseMat;
 
-        // POMERANJE: 
-        // Pošto je model lifta verovatno centriran, moramo ga pomeriti 
-        // malo "napred" da bi bio na vratima. Probaj 0.5f ili -0.5f po Z osi.
         barrierMat = glm::translate(barrierMat, glm::vec3(0.0f, -0.55f, 0.2f));
 
         // SKALIRANJE:
