@@ -192,10 +192,6 @@ void processInput(GLFWwindow* window, Elevator& lift) {
         currentPlayerFloor = (int)round((cameraPos.y - lift.liftBaseY) / floorHeight);
         std::cout << "JA SAM NA " << currentPlayerFloor << std::endl;
     }
-
-
-
-
 }
 int main() {
 
@@ -312,10 +308,9 @@ int main() {
 
         if (mouseClick && !mouseWasPressed && mojLift.isInside(cameraPos)) {
             int btn = panel.getButtonAtRay(cameraPos, cameraFront);
-            if (btn != -1) {
+            if (-1<btn < 8) {
                 panel.buttons[btn].active = true;
-                int targetFloor = getFloorFromButton(btn);  // ← ovo mapira dugme na pravi sprat
-                mojLift.addTargetFloor(targetFloor);
+                panel.pressButton(btn);
             }
 
         }

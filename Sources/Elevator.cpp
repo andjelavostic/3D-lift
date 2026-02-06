@@ -87,27 +87,40 @@ Elevator::Elevator(const char* modelPath, glm::vec3 startPos) {
     }
 
 
-void Elevator::openDoors() {
-    doorsOpen = true;
-    doorOpenTime = (float)glfwGetTime();
-    doorDuration = 5.0f;
-    doorExtended = false; // Resetuj mogućnost produžavanja
-}
+  void Elevator::openDoors() {
+       doorsOpen = true;
+       doorOpenTime = (float)glfwGetTime();
+       doorDuration = 5.0f;
+       doorExtended = false;
+
+       state = ElevatorState::DOORS_OPEN; // 🔴 OVO JE FALILO
+  }
+
 
 void Elevator::extendDoors() {
-    if (doorsOpen && !doorExtended) {
-        doorDuration += 5.0f; // Produži za još 5 sekundi
-        doorExtended = true;  // Može samo jednom
-        std::cout << "Vrata produžena!" << std::endl;
+    if (state == ElevatorState::DOORS_OPEN && doorsOpen && !doorExtended) {
+        doorDuration += 5.0f;
+        doorExtended = true;
+        std::cout << "Vrata produžena +5s" << std::endl;
     }
 }
 
 void Elevator::closeDoorsImmediately() {
-    if (doorsOpen) {
-        // Postavljamo vreme tako da tajmer odmah istekne
-        doorOpenTime = (float)glfwGetTime() - doorDuration;
-    }
+    if (state != ElevatorState::DOORS_OPEN) return;
+
+    doorsOpen = false;
+    doorOpenFactor = 0.0f;
+    doorExtended = false;
+
+    if (!targetFloors.empty())
+        targetFloors.erase(targetFloors.begin());
+
+    state = targetFloors.empty()
+        ? ElevatorState::IDLE
+        : ElevatorState::MOVING;
 }
+
+
 void Elevator::setupBarrier() {
     float vertices[] = {
         // Pozicije           // Normale          // UV

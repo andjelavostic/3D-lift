@@ -47,6 +47,10 @@ public:
 
     ElevatorState state = ElevatorState::IDLE;
 
+    void forceCloseDoors();
+
+    void extendDoorOpenTime(float seconds);
+
 };
 
 #endif
