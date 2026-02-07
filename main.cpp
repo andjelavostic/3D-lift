@@ -18,6 +18,7 @@
 #include "Headers/Elevator.hpp"
 #include "Headers/PanelGrid.hpp"
 #include "Headers/FloorLabels.hpp"
+#include "Headers/Overlay.hpp"
 
 // Parametri ekrana
 unsigned int wWidth = 800; // Biće ažurirano na rezoluciju monitora
@@ -222,7 +223,8 @@ int main() {
     if (glewInit() != GLEW_OK) return -3;
 
     glEnable(GL_DEPTH_TEST);
-
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     std::vector<std::string> floorLabelPaths = {
     "res/su.png",
     "res/pr.png",
@@ -237,16 +239,16 @@ int main() {
     FloorLabels floorLabels(floorLabelPaths);
     Model lija("res/scene.obj");
     Shader unifiedShader("basic.vert", "basic.frag");
+    Shader overlayShader("overlay.vert", "overlay.frag");
 
     Elevator mojLift("res/elevator.obj", glm::vec3(5.5f,5.3f, -7.5f));
     Shader panelShader("panel.vert", "panel.frag");
-
     PanelGrid panel(6,2); // 4 reda, 3 kolone
-
-   
-
     Model lampLift("res/lamp/scene.obj");
     Model lampFloor("res/lamp/scene.obj");
+    Overlay overlay;
+    overlay.setPosition(-1.0f, 1.0f); //na ivici
+    overlay.setSize(0.3f, 0.15f);
 
 
     // Offset relativno na lift
@@ -456,6 +458,8 @@ int main() {
         unifiedShader.setMat4("uM", lampLiftM);
         lampLift.Draw(unifiedShader);
 
+        // --- OVERLAY ---
+        overlay.draw(overlayShader.ID);
 
 
         glfwSwapBuffers(window);
