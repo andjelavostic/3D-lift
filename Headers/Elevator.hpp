@@ -42,7 +42,7 @@ public:
     enum class ElevatorState {
         IDLE,
         MOVING,
-        DOORS_OPEN
+        DOORS_OPEN,
     };
 
     ElevatorState state = ElevatorState::IDLE;

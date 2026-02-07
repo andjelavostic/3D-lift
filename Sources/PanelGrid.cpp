@@ -67,29 +67,32 @@ void PanelGrid::pressButton(int buttonIndex)
 {
     if (!attachedLift) return;
 
-    // Dugmad rade SAMO ako su vrata otvorena
-    if (attachedLift->state != Elevator::ElevatorState::DOORS_OPEN)
-        return;
-
-    // ---------- SPRATOVI ----------
+    // ---------- SPRATOVI (UVEK DOZVOLJENI) ----------
     if (buttonIndex >= 0 && buttonIndex <= 7) {
         buttons[buttonIndex].active = true;
         attachedLift->addTargetFloor(buttonIndex);
         return;
     }
 
+    // Odavde važi SAMO ako su vrata otvorena
+    if (attachedLift->state != Elevator::ElevatorState::DOORS_OPEN)
+        return;
+
     // ---------- CLOSE ----------
     if (buttonIndex == 8) {
+        buttons[buttonIndex].active = true;
         attachedLift->closeDoorsImmediately();
         return;
     }
 
     // ---------- OPEN ----------
     if (buttonIndex == 9) {
+        buttons[buttonIndex].active = true;
         attachedLift->extendDoors();
         return;
     }
 }
+
 
 
 void PanelGrid::Draw(Shader& shader)

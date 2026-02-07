@@ -286,8 +286,6 @@ int main() {
     const double frameTimeLimit = 1.0 / targetFPS;
 
     // --- Spratovi ---
-    
-
     while (!glfwWindowShouldClose(window)) {
         if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
             std::cout << "Trenutna pozicija: X: " << cameraPos.x << " Y: " << cameraPos.y << std::endl;
@@ -308,8 +306,7 @@ int main() {
 
         if (mouseClick && !mouseWasPressed && mojLift.isInside(cameraPos)) {
             int btn = panel.getButtonAtRay(cameraPos, cameraFront);
-            if (-1<btn < 8) {
-                panel.buttons[btn].active = true;
+            if (btn >= 0 && btn < 10)  {
                 panel.pressButton(btn);
             }
 
@@ -414,6 +411,17 @@ int main() {
                 panel.buttons[i].active = false; // dugme ugasimo
             }
         }
+        // OPEN gori samo dok su vrata otvorena
+        if (mojLift.state != Elevator::ElevatorState::DOORS_OPEN) {
+            panel.buttons[9].active = false;
+        }
+
+        // CLOSE gori dok se vrata zatvaraju
+        if (mojLift.doorOpenFactor <= 0.01f) {
+            panel.buttons[8].active = false;
+        }
+
+
 
         mojLift.draw(unifiedShader);
         panel.attachToLiftWall(

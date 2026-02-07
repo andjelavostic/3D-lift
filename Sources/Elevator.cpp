@@ -93,7 +93,7 @@ Elevator::Elevator(const char* modelPath, glm::vec3 startPos) {
        doorDuration = 5.0f;
        doorExtended = false;
 
-       state = ElevatorState::DOORS_OPEN; // 🔴 OVO JE FALILO
+       state = ElevatorState::DOORS_OPEN; //OVO JE FALILO
   }
 
 
@@ -109,7 +109,6 @@ void Elevator::closeDoorsImmediately() {
     if (state != ElevatorState::DOORS_OPEN) return;
 
     doorsOpen = false;
-    doorOpenFactor = 0.0f;
     doorExtended = false;
 
     if (!targetFloors.empty())
