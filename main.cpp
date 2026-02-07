@@ -38,7 +38,8 @@ void applyRenderingSettings() {
         glDisable(GL_CULL_FACE);
 }
 
-// Parametri kamere
+
+
 glm::vec3 cameraPos = glm::vec3(0.0f, 3.5f, 10.0f); // start normalna visina
 glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
 glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
@@ -303,13 +304,17 @@ int main() {
     "res/number-five.png",
     "res/number-six.png"
     };
-
+    // Parametri kamere
+    int cameraFloor = 1; // jedan sprat ispod lifta
+    cameraPos = glm::vec3(0.0f, liftBaseY + cameraFloor * floorHeight - 1.5f, 10.0f);
+    currentPlayerFloor = cameraFloor;
     FloorLabels floorLabels(floorLabelPaths);
     Model lija("res/scene.obj");
     Shader unifiedShader("basic.vert", "basic.frag");
     Shader overlayShader("overlay.vert", "overlay.frag");
-
-    Elevator mojLift("res/elevator.obj", glm::vec3(5.5f,5.3f, -7.5f));
+    int initialLiftFloor = 2; // lift na 2. spratu
+    float liftStartY = liftBaseY + initialLiftFloor * floorHeight;
+    Elevator mojLift("res/elevator.obj", glm::vec3(5.5f, liftStartY, -7.5f));
     Shader panelShader("panel.vert", "panel.frag");
     PanelGrid panel(6,2); // 4 reda, 3 kolone
     Model lampLift("res/lamp/scene.obj");
@@ -433,6 +438,7 @@ int main() {
             // =====================
             glm::vec3 plantBasePos(-3.5f, y, 2.0f);
             float plantSpacing = 1.3f;
+            glDisable(GL_CULL_FACE); // Isključi culling samo za biljke
 
             glm::mat4 plant1M = glm::translate(glm::mat4(1.0f), plantBasePos);
             plant1M = glm::scale(plant1M, glm::vec3(0.9f));
@@ -450,7 +456,7 @@ int main() {
             plant3M = glm::scale(plant3M, glm::vec3(0.01f));
             unifiedShader.setMat4("uM", plant3M);
             plant3.Draw(unifiedShader);
-
+            applyRenderingSettings();
             // =====================
             // LAMPA NA SPRATU
             // =====================
@@ -494,7 +500,7 @@ int main() {
         }
 
 
-
+        glDisable(GL_CULL_FACE);
         mojLift.draw(unifiedShader);
         panel.attachToLiftWall(
             &mojLift,
@@ -503,7 +509,7 @@ int main() {
             0.6f,                      // širina panela
             1.5f                       // visina panela
         );
-
+        applyRenderingSettings();
         panel.Draw(unifiedShader);
         // Svetla dugmadi
         glm::mat4 panelWorldModel = panel.getWorldModel();

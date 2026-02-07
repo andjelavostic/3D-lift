@@ -38,11 +38,12 @@ uniform vec3 uPanelLightColor[12];
 
 void main()
 {
-    if (!gl_FrontFacing)
-        discard;
 
     // NORMAL
     vec3 norm = normalize(chNormal);
+    if (!gl_FrontFacing)
+        norm=-norm;
+
     vec3 viewDir = normalize(uViewPos - chFragPos);
 
     // ---------------- AMBIENT ----------------
