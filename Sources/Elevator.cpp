@@ -185,16 +185,20 @@ void Elevator::goToFloor(float yHeight) {
     if (!doorsOpen) targetY = yHeight; // Ne kreći se ako su vrata otvorena
 }
 bool Elevator::isAtDoor(glm::vec3 p) {
-    // 1. Provera X ose: Mora biti šire od samog modela vrata da bi bilo lakše ući
-    // Tvoj lift je od 3.06 do 8.82. Vrata su ti na 4.3 do 5.9.
+    // 1. Provera X ose (širi "prozor" oko vrata)
     bool atX = (p.x >= 4.0f && p.x <= 6.2f);
 
-    // 2. Provera Z ose: maxZ ti je -7.02f. 
-    // Napravićemo "prozor" od -7.5 (unutar lifta) do -6.5 (napolju na spratu)
+    // 2. Provera Z ose (prozor ka spolja)
     bool atZ = (p.z >= -7.5f && p.z <= -6.5f);
 
-    return atX && atZ;
+    // 3. Provera Y ose: samo ako je igrač na istom spratu kao lift
+    float floorY = currentY; // trenutna visina lifta
+    bool atY = (p.y >= floorY - 3.0f && p.y <= floorY + 3.0f);
+    // +/- 1.5f marginu prilagodi visini kamere
+
+    return atX && atZ && atY;
 }
+
 
 void Elevator::toggleDoors() {
     if (abs(targetY - currentY) < 0.05f) {

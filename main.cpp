@@ -24,6 +24,20 @@
 unsigned int wWidth = 800; // Biće ažurirano na rezoluciju monitora
 unsigned int wHeight = 600;
 
+bool depthTestEnabled = true;   // uključeno po default-u
+bool cullingEnabled = true;     // uključeno po default-u
+void applyRenderingSettings() {
+    if (depthTestEnabled)
+        glEnable(GL_DEPTH_TEST);
+    else
+        glDisable(GL_DEPTH_TEST);
+
+    if (cullingEnabled)
+        glEnable(GL_CULL_FACE);
+    else
+        glDisable(GL_CULL_FACE);
+}
+
 // Parametri kamere
 glm::vec3 cameraPos = glm::vec3(0.0f, 3.5f, 10.0f); // start normalna visina
 glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
@@ -101,6 +115,36 @@ void processInput(GLFWwindow* window, Elevator& lift) {
 
     float cameraSpeed = 5.5f * deltaTime;
 
+
+    static bool tWasPressed = false;
+    static bool fWasPressed = false;
+
+    // --- T = Depth Test ---
+    if (glfwGetKey(window, GLFW_KEY_T) == GLFW_PRESS) {
+        if (!tWasPressed) {
+            depthTestEnabled = !depthTestEnabled;
+            std::cout << "Depth Test: "
+                      << (depthTestEnabled ? "ON" : "OFF") << std::endl;
+            applyRenderingSettings();
+            tWasPressed = true;
+        }
+    } else {
+        tWasPressed = false;
+    }
+
+    // --- F = Face Culling ---
+    if (glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS) {
+        if (!fWasPressed) {
+            cullingEnabled = !cullingEnabled;
+            std::cout << "Face Culling: "
+                      << (cullingEnabled ? "ON" : "OFF") << std::endl;
+            applyRenderingSettings();
+            fWasPressed = true;
+        }
+    } else {
+        fWasPressed = false;
+    }
+
     // Smerovi kretanja (ravno, bez propadanja)
     glm::vec3 forward = glm::normalize(glm::vec3(cameraFront.x, 0.0f, cameraFront.z));
     glm::vec3 right = glm::normalize(glm::cross(forward, cameraUp));
@@ -117,20 +161,32 @@ void processInput(GLFWwindow* window, Elevator& lift) {
 
     if (glfwGetKey(window, GLFW_KEY_C) == GLFW_PRESS) {
         if (!cWasPressed) {
-            int callerFloor = currentPlayerFloor;
 
-            float callerY = callerFloor * floorHeight;
-            bool liftIsHere = fabs(lift.currentY - callerY) < 0.05f;
+            int callerFloor = currentPlayerFloor;          // sprat igrača
+            float callerY = callerFloor * floorHeight;     // Y koordinata sprata
+            bool liftIsHere = fabs(lift.currentY - callerY) < 0.05f; // lift na spratu igrača
 
-            float dist = glm::distance(
-                glm::vec3(cameraPos.x, 0, cameraPos.z),
-                glm::vec3(lift.position.x, 0, lift.position.z)
-            );
+            // Provera udaljenosti samo u X/Z ravni
+            bool nearLiftXZ =
+                fabs(cameraPos.x - lift.position.x) < 4.0f &&
+                fabs(cameraPos.z - lift.position.z) < 4.0f;
 
-            bool nearLift = dist < 4.0f;
-
-            // SAMO DODAJ SPRAT
-            if (!liftIsHere) {
+            if (liftIsHere && nearLiftXZ) {
+                if (lift.doorsOpen) {
+                    // Ulazak u lift
+                    if (!lift.isInside(cameraPos)) {
+                        cameraPos.y = lift.currentY - 1.5f; // Kamera odmah prati lift
+                        std::cout << "Ušao sam u lift na spratu " << callerFloor << std::endl;
+                    }
+                }
+                else {
+                    // Lift je na spratu, vrata zatvorena - pozivanje lifta
+                    lift.addTargetFloor(callerFloor);
+                    std::cout << "Pozvan lift na sprat " << callerFloor << std::endl;
+                }
+            }
+            else if (!liftIsHere && nearLiftXZ) {
+                // Lift nije na spratu, ali blizu u X/Z - poziv lifta
                 lift.addTargetFloor(callerFloor);
                 std::cout << "Pozvan lift na sprat " << callerFloor << std::endl;
             }
@@ -147,7 +203,7 @@ void processInput(GLFWwindow* window, Elevator& lift) {
     // Provera da li je trenutna i buduća pozicija unutar lifta sa marginom
     auto isInsideStrict = [&](glm::vec3 pos) {
         return (pos.x >= lift.minX + 1.0f && pos.x <= lift.maxX - 2.5f &&
-            pos.z >= lift.minZ  && pos.z <= lift.maxZ);
+            pos.z >= lift.minZ && pos.z <= lift.maxZ);
         };
 
     bool wasIn = lift.isInside(cameraPos); // Koristimo običan za detekciju stanja
@@ -289,6 +345,8 @@ int main() {
 
     // --- Spratovi ---
     while (!glfwWindowShouldClose(window)) {
+        applyRenderingSettings();
+
         if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
             std::cout << "Trenutna pozicija: X: " << cameraPos.x << " Y: " << cameraPos.y << std::endl;
         }
