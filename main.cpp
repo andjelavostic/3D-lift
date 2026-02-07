@@ -205,24 +205,36 @@ void processInput(GLFWwindow* window, Elevator& lift) {
         return (pos.x >= lift.minX + 1.0f && pos.x <= lift.maxX - 2.5f &&
             pos.z >= lift.minZ && pos.z <= lift.maxZ);
         };
+    auto isInsideStrictClosed = [&](glm::vec3 pos) {
+        return (pos.x >= lift.minX + 1.0f && pos.x <= lift.maxX - 2.5f &&
+            pos.z >= lift.minZ && pos.z <= lift.maxZ-0.7f);
+        };
 
     bool wasIn = lift.isInside(cameraPos); // Koristimo običan za detekciju stanja
     bool nextInStrict = isInsideStrict(nextPos);
+    bool nextInStrictClosed = isInsideStrictClosed(nextPos);
     bool onFloor = isPointOnFloor(nextPos);
 
     if (wasIn) {
         // --- AKO SMO U LIFTU ---
-        if (nextInStrict) {
-            cameraPos = nextPos; // Slobodno kretanje unutar "zatvora"
-        }
-        else {
-            // Pokušaj izlaska - dozvoli samo na vratima
-            if (lift.isAtDoor(nextPos) && lift.doorsOpen) {
+        if (lift.doorsOpen) {
+            // slobodno kretanje kada su vrata otvorena
+            if (nextInStrict) {
                 cameraPos = nextPos;
             }
-            // Inače: Ne menjaj cameraPos (udaraš u unutrašnji zid)
+            else if (lift.isAtDoor(nextPos)) {
+                cameraPos = nextPos; // dozvoli izlazak kroz vrata
+            }
+        }
+        else {
+            // vrata zatvorena → koristi stricte granice sa marginom
+            if (nextInStrictClosed) {
+                cameraPos = nextPos;
+            }
+            // ne dozvoljavaj izlazak kroz zid
         }
     }
+
     else {
         // --- AKO SMO VAN LIFTA ---
         if (!lift.isInside(nextPos)) { // Ovde koristimo običan isInside da ne bismo zapeli za spoljašnji zid
