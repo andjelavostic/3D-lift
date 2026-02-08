@@ -75,17 +75,18 @@ int getFloorFromButton(int btnIndex) {
 
 // Callback za miš
 void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
-    float centerX = wWidth / 2.0f;
-    float centerY = wHeight / 2.0f;
-
     if (firstMouse) {
-        glfwSetCursorPos(window, centerX, centerY);
+        lastX = xpos;
+        lastY = ypos;
         firstMouse = false;
         return;
     }
 
-    float xoffset = xpos - centerX;
-    float yoffset = centerY - ypos;
+    float xoffset = xpos - lastX;
+    float yoffset = lastY - ypos; // obrni Y
+
+    lastX = xpos;
+    lastY = ypos;
 
     float sensitivity = 0.1f;
     xoffset *= sensitivity;
@@ -102,8 +103,6 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
     front.y = sin(glm::radians(pitch));
     front.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
     cameraFront = glm::normalize(front);
-
-    glfwSetCursorPos(window, centerX, centerY);
 }
 
 
