@@ -382,7 +382,7 @@ int main() {
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
 
-
+        glfwPollEvents();
         // 2. Input
         processInput(window,mojLift);
 
@@ -549,7 +549,7 @@ int main() {
 
 
         glfwSwapBuffers(window);
-        glfwPollEvents();
+        
 
         // FPS Limiter - uspavaj nit do sledećeg frejma
         double frameEndTime = glfwGetTime();
