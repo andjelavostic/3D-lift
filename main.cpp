@@ -19,6 +19,7 @@
 #include "Headers/PanelGrid.hpp"
 #include "Headers/FloorLabels.hpp"
 #include "Headers/Overlay.hpp"
+#include "Headers/Cursor.hpp"
 
 // Parametri ekrana
 unsigned int wWidth = 800; // Biće ažurirano na rezoluciju monitora
@@ -74,11 +75,17 @@ int getFloorFromButton(int btnIndex) {
 
 // Callback za miš
 void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
-    float centerX = wWidth / 2.0;
-    float centerY = wHeight / 2.0;
+    float centerX = wWidth / 2.0f;
+    float centerY = wHeight / 2.0f;
+
+    if (firstMouse) {
+        glfwSetCursorPos(window, centerX, centerY);
+        firstMouse = false;
+        return;
+    }
 
     float xoffset = xpos - centerX;
-    float yoffset = centerY - ypos; // y je obrnuto u OpenGL
+    float yoffset = centerY - ypos;
 
     float sensitivity = 0.1f;
     xoffset *= sensitivity;
@@ -96,9 +103,9 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
     front.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
     cameraFront = glm::normalize(front);
 
-    // Resetuj kursorsku poziciju u centar
     glfwSetCursorPos(window, centerX, centerY);
 }
+
 
 bool isPointOnFloor(glm::vec3 p) {
     // 1. Levi vertikalni krak (od X -11 do 0.5, Z 1 do 11)
@@ -286,12 +293,12 @@ int main() {
         return -2;
     }
     glfwMakeContextCurrent(window);
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     glfwSetCursorPosCallback(window, mouse_callback);
 
     if (glewInit() != GLEW_OK) return -3;
 
-    glEnable(GL_DEPTH_TEST);
+    //glEnable(GL_DEPTH_TEST);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     std::vector<std::string> floorLabelPaths = {
@@ -304,6 +311,8 @@ int main() {
     "res/number-five.png",
     "res/number-six.png"
     };
+    Cursor cursor;
+    cursor.init();
     // Parametri kamere
     int cameraFloor = 1; // jedan sprat ispod lifta
     cameraPos = glm::vec3(0.0f, liftBaseY + cameraFloor * floorHeight - 1.5f, 10.0f);
@@ -373,6 +382,7 @@ int main() {
         float currentFrame = (float)frameStartTime;
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
+
 
         // 2. Input
         processInput(window,mojLift);
@@ -536,6 +546,7 @@ int main() {
 
         // --- OVERLAY ---
         overlay.draw(overlayShader.ID);
+        cursor.render();
 
 
         glfwSwapBuffers(window);
