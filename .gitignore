@@ -20,3 +20,5 @@ Release/
 *.cache
 
 packages/
+# BUT allow obj files in res folder
+!res/**/*.obj
