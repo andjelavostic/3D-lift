@@ -292,6 +292,10 @@ int main() {
         return -2;
     }
     glfwMakeContextCurrent(window);
+    if (glfwRawMouseMotionSupported()) {
+        glfwSetInputMode(window, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
+    }
+
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     glfwSetCursorPosCallback(window, mouse_callback);
 
@@ -382,7 +386,7 @@ int main() {
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
 
-        glfwPollEvents();
+
         // 2. Input
         processInput(window,mojLift);
 
@@ -549,7 +553,7 @@ int main() {
 
 
         glfwSwapBuffers(window);
-        
+        glfwPollEvents();
 
         // FPS Limiter - uspavaj nit do sledećeg frejma
         double frameEndTime = glfwGetTime();
